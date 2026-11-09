@@ -1,13 +1,14 @@
 import 'package:get/get.dart';
-import 'package:oasx/views/overview/overview_view.dart';
+
+import 'package:oasx/model/task_item_model.dart';
 
 enum ScriptState {
   inactive,
   running,
   warning,
-  updating,;
+  updating;
 
-  static ScriptState getState(dynamic value){
+  static ScriptState getState(dynamic value) {
     return switch (value) {
       0 => inactive,
       1 => running,
@@ -21,17 +22,18 @@ enum ScriptState {
 class ScriptModel {
   String name;
   final state = ScriptState.updating.obs;
-  final runningTask = const TaskItemModel('', '').obs;
+  final runningTask = TaskItemModel.empty().obs;
   final pendingTaskList = <TaskItemModel>[].obs;
   final waitingTaskList = <TaskItemModel>[].obs;
 
   ScriptModel(this.name);
 
-  void update(
-      {ScriptState? state,
-      TaskItemModel? runningTask,
-      List<TaskItemModel>? pendingTaskList,
-      List<TaskItemModel>? waitingTaskList}) {
+  void update({
+    ScriptState? state,
+    TaskItemModel? runningTask,
+    List<TaskItemModel>? pendingTaskList,
+    List<TaskItemModel>? waitingTaskList,
+  }) {
     if (state != null && this.state.value != state) this.state.value = state;
     if (runningTask != null && this.runningTask.value != runningTask) {
       this.runningTask.value = runningTask;

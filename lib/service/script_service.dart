@@ -2,10 +2,12 @@ import 'dart:convert';
 
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+
 import 'package:oasx/api/api_client.dart';
+import 'package:oasx/controller/overview/overview_controller.dart';
 import 'package:oasx/model/script_model.dart';
+import 'package:oasx/model/task_item_model.dart';
 import 'package:oasx/service/websocket_service.dart';
-import 'package:oasx/views/overview/overview_view.dart';
 
 class ScriptService extends GetxService {
   // ignore: unused_field
@@ -28,7 +30,7 @@ class ScriptService extends GetxService {
       ...scriptModelMap.keys.map((e) => Future.wait([
             stopScript(e),
             wsService.close(e),
-            Get.delete<OverviewController>(tag: e, force: true)
+            Get.delete<OverviewController>(tag: e, force: true),
           ])),
     ]);
     scriptModelMap.clear();
@@ -47,6 +49,7 @@ class ScriptService extends GetxService {
     await connectScript(name);
     await wsService.send(name, 'start');
     await wsService.send(name, 'get_state');
+    await wsService.send(name, 'get_schedule');
   }
 
   void wsListener(dynamic message, String name) {
@@ -60,26 +63,30 @@ class ScriptService extends GetxService {
       }
       return;
     }
-    Map<String, dynamic> data = jsonDecode(message);
+    final data = jsonDecode(message) as Map<String, dynamic>;
     if (data.containsKey('state')) {
       scriptModelMap[name]!.update(state: ScriptState.getState(data['state']));
       return;
     }
     if (data.containsKey('schedule')) {
-      Map run = data['schedule']['running'];
-      List<dynamic> pending = data['schedule']['pending'];
-      List<dynamic> waiting = data['schedule']['waiting'];
-      TaskItemModel runningTask = run.isNotEmpty
-          ? TaskItemModel(run['name'], run['next_run'])
+      final schedule = data['schedule'] as Map<String, dynamic>;
+      final run = schedule['running'] as Map? ?? const {};
+      final pending = schedule['pending'] as List? ?? const [];
+      final waiting = schedule['waiting'] as List? ?? const [];
+      final runningTask = run.isNotEmpty
+          ? TaskItemModel('${run['name']}', '${run['next_run']}')
           : TaskItemModel.empty();
-      final pendingList =
-          pending.map((e) => TaskItemModel(e['name'], e['next_run'])).toList();
-      final waitingList =
-          waiting.map((e) => TaskItemModel(e['name'], e['next_run'])).toList();
+      final pendingList = pending
+          .map((e) => TaskItemModel('${e['name']}', '${e['next_run']}'))
+          .toList();
+      final waitingList = waiting
+          .map((e) => TaskItemModel('${e['name']}', '${e['next_run']}'))
+          .toList();
       scriptModelMap[name]!.update(
-          runningTask: runningTask,
-          pendingTaskList: pendingList,
-          waitingTaskList: waitingList);
+        runningTask: runningTask,
+        pendingTaskList: pendingList,
+        waitingTaskList: waitingList,
+      );
     }
   }
 
@@ -89,9 +96,7 @@ class ScriptService extends GetxService {
   }
 
   void addScriptModel(dynamic sm) {
-    if (sm is String) {
-      sm = ScriptModel(sm);
-    }
+    if (sm is String) sm = ScriptModel(sm);
     if (scriptModelMap.containsKey(sm.name)) return;
     scriptModelMap[sm.name] = sm;
   }
@@ -115,7 +120,5 @@ class ScriptService extends GetxService {
     wsService.close(name);
   }
 
-  ScriptModel? findScriptModel(String name) {
-    return scriptModelMap[name];
-  }
+  ScriptModel? findScriptModel(String name) => scriptModelMap[name];
 }

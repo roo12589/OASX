@@ -1,182 +1,280 @@
-part of overview;
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
+import 'package:oasx/config/design/app_theme.dart';
+import 'package:oasx/config/translation/i18n_content.dart';
+import 'package:oasx/model/task_item_model.dart';
+import 'package:oasx/views/common/app_widgets.dart';
+import 'package:oasx/views/overview/overview_model.dart';
+
+/// 单条任务行：左侧时间 + 名称，右侧操作按钮
 class TaskItemView extends StatelessWidget {
+  const TaskItemView({
+    super.key,
+    required this.model,
+    required this.state,
+    this.onRunNow,
+    this.onPinTop,
+    this.onPinBottom,
+    this.onOpenSetting,
+  });
+
   final TaskItemModel model;
-  const TaskItemView(this.model, {super.key});
+  final TaskRowState state;
+  final VoidCallback? onRunNow;
+  final VoidCallback? onPinTop;
+  final VoidCallback? onPinBottom;
+  final VoidCallback? onOpenSetting;
 
   @override
   Widget build(BuildContext context) {
-    return model.isAllEmpty()
-        ? const SizedBox(height: 30)
-        : <Widget>[
-            _name(context),
-            _actionButtons(context), // 改为渲染多个按钮的容器
-          ]
-            .toRow(mainAxisAlignment: MainAxisAlignment.spaceBetween)
-            .padding(bottom: 10);
+    if (model.isAllEmpty()) return const SizedBox.shrink();
+    return _TaskRowBody(
+      model: model,
+      state: state,
+      onRunNow: onRunNow,
+      onPinTop: onPinTop,
+      onPinBottom: onPinBottom,
+      onOpenSetting: onOpenSetting,
+    );
+  }
+}
+
+class _TaskRowBody extends StatefulWidget {
+  const _TaskRowBody({
+    required this.model,
+    required this.state,
+    this.onRunNow,
+    this.onPinTop,
+    this.onPinBottom,
+    this.onOpenSetting,
+  });
+
+  final TaskItemModel model;
+  final TaskRowState state;
+  final VoidCallback? onRunNow;
+  final VoidCallback? onPinTop;
+  final VoidCallback? onPinBottom;
+  final VoidCallback? onOpenSetting;
+
+  @override
+  State<_TaskRowBody> createState() => _TaskRowBodyState();
+}
+
+class _TaskRowBodyState extends State<_TaskRowBody> {
+  bool _hover = false;
+
+  bool get _isOverdue {
+    final dt = widget.model.nextRunDateTime;
+    if (dt == null) return false;
+    return dt.isBefore(DateTime.now());
   }
 
-  Widget _name(BuildContext context) {
-    return <Widget>[
-      Text(model.taskName.tr, style: Theme.of(context).textTheme.labelLarge),
-      Text(model.nextRun, style: Theme.of(context).textTheme.labelMedium)
-    ].toColumn(crossAxisAlignment: CrossAxisAlignment.start);
+  @override
+  Widget build(BuildContext context) {
+    final running = widget.state == TaskRowState.running;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: GestureDetector(
+        onTap: widget.onOpenSetting,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 110),
+          margin: const EdgeInsets.only(bottom: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+          decoration: BoxDecoration(
+            color: running
+                ? AppColors.accentDark.withValues(alpha: 0.45)
+                : (_hover ? AppColors.panelHover : AppColors.panelSoft),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: running
+                  ? AppColors.accent.withValues(alpha: 0.38)
+                  : (_hover ? AppColors.borderStrong : AppColors.borderSoft),
+            ),
+          ),
+          child: Row(
+            children: [
+              _TimeBadge(
+                time: widget.model.timeLabel,
+                date: widget.model.dateLabel,
+                running: running,
+                overdue: !running && _isOverdue,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      widget.model.taskName.tr,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        height: 1.25,
+                        fontWeight:
+                            running ? FontWeight.w600 : FontWeight.w500,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    if (running) ...[
+                      const SizedBox(height: 2),
+                      const Text(
+                        'RUNNING',
+                        style: TextStyle(
+                          fontSize: 8.5,
+                          height: 1.1,
+                          letterSpacing: 0.8,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.accent,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 4),
+              _RowActions(
+                highlighted: _hover || running,
+                onRunNow: widget.onRunNow,
+                onPinTop: widget.onPinTop,
+                onPinBottom: widget.onPinBottom,
+                onOpenSetting: widget.onOpenSetting,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
+}
 
-  // 新增：封装两个按钮（立即运行 + 任务设置）
-  Widget _actionButtons(BuildContext context) {
-    return <Widget>[
-      // 1. 立即运行按钮
-      Tooltip(
-        message: I18n.task_pin_top.tr,
-        child: OutlinedButton(
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.all(0),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10.0),
-            ),
-            // 可自定义按钮颜色（如需匹配主题，用 Theme.of(context).primaryColor）
-          ),
-          // 立即运行按钮点击事件：将此任务的下一次运行时间设置为当前时间
-          onPressed: () async {
-            try {
-              // 获取当前脚本名称
-              final scriptName = Get.find<NavCtrl>().selectedScript.value;
-              print("scriptName: $scriptName");
-              // 格式化当前时间为 "YYYY-MM-DD HH:mm:ss" 格式
-              final now = DateTime.now();
-              final year = now.year.toString();
-              final month = now.month.toString().padLeft(2, '0');
-              final day = now.day.toString().padLeft(2, '0');
-              final hour = now.hour.toString().padLeft(2, '0');
-              final minute = now.minute.toString().padLeft(2, '0');
-              final second = now.second.toString().padLeft(2, '0');
-              final currentTime = '$year-$month-$day $hour:$minute:$second';
+class _TimeBadge extends StatelessWidget {
+  const _TimeBadge({
+    required this.time,
+    required this.running,
+    this.date,
+    this.overdue = false,
+  });
 
-              // 更新任务的 next_run 时间为当前时间
-              final success = await ApiClient().putScriptArg(
-                scriptName,
-                model.taskName,
-                'scheduler',
-                'next_run',
-                'string',
-                currentTime,
-              );
+  final String time;
+  final String? date;
+  final bool running;
+  final bool overdue;
 
-              if (success) {
-                print("${model.taskName} 的下一次运行时间已更新为: $currentTime");
-                // 显示成功通知
-                Get.snackbar(I18n.task_pin_top.tr, '${model.taskName} ${I18n.task_next_run_updated_to.tr}: $currentTime',
-                    duration: const Duration(seconds: 1));
-                // 刷新任务状态
-                Get.find<ScriptService>().wsService.send(scriptName, 'get_state');
-              } else {
-                print("更新 ${model.taskName} 的下一次运行时间失败");
-                // 显示失败通知
-                Get.snackbar(I18n.operation_failed.tr, I18n.update_task_next_run_failed.tr,
-                    duration: const Duration(seconds: 1));
-              }
-            } catch (e) {
-              print("更新任务运行时间时出错: $e");
-              // 显示错误通知
-              Get.snackbar(I18n.operation_failed.tr, '${I18n.update_task_run_time_error.tr}: $e',
-                  duration: const Duration(seconds: 2));
-            }
-          },
-          child: Text(
-            '▲', // 'I18n.run_now.tr', // 新增国际化key："立即运行"（需在I18n文件中添加）
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.black,
-                ),
-          ),
-        ),
-      ).constrained(maxWidth: 30, maxHeight: 30),
-
-      const SizedBox(width: 5), // 按钮之间的间距
-
-      // 2. 延迟运行按钮：将下次运行时间设置为1年后的今天
-      Tooltip(
-        message: I18n.task_pin_bottom.tr,
-        child: OutlinedButton(
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.all(0),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10.0),
+  @override
+  Widget build(BuildContext context) {
+    final Color fg;
+    final Color bg;
+    final Color borderColor;
+    if (running) {
+      fg = const Color(0xFF06231A);
+      bg = AppColors.accent;
+      borderColor = AppColors.accent;
+    } else if (overdue) {
+      fg = AppColors.danger;
+      bg = AppColors.dangerSoft;
+      borderColor = AppColors.danger.withValues(alpha: 0.4);
+    } else {
+      fg = AppColors.textSecondary;
+      bg = AppColors.panelHi;
+      borderColor = AppColors.border;
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(7),
+        border: Border.all(color: borderColor),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            time,
+            style: TextStyle(
+              fontSize: 11,
+              height: 1.1,
+              fontWeight: FontWeight.w600,
+              color: fg,
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
-          onPressed: () async {
-            try {
-              // 获取当前脚本名称
-              final scriptName = Get.find<NavCtrl>().selectedScript.value;
-              
-              // 计算1年后的今天
-              final now = DateTime.now();
-              final oneYearLater = DateTime(now.year + 1, now.month, now.day, now.hour, now.minute, now.second);
-              
-              // 格式化为 "YYYY-MM-DD HH:mm:ss" 格式
-              final year = oneYearLater.year.toString();
-              final month = oneYearLater.month.toString().padLeft(2, '0');
-              final day = oneYearLater.day.toString().padLeft(2, '0');
-              final hour = oneYearLater.hour.toString().padLeft(2, '0');
-              final minute = oneYearLater.minute.toString().padLeft(2, '0');
-              final second = oneYearLater.second.toString().padLeft(2, '0');
-              final oneYearLaterTime = '$year-$month-$day $hour:$minute:$second';
+          if (date != null) ...[
+            const SizedBox(height: 1),
+            Text(
+              date!,
+              style: TextStyle(
+                fontSize: 8.5,
+                height: 1.1,
+                color: fg.withValues(alpha: 0.75),
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
 
-              // 更新任务的 next_run 时间为1年后的今天
-              final success = await ApiClient().putScriptArg(
-                scriptName,
-                model.taskName,
-                'scheduler',
-                'next_run',
-                'string',
-                oneYearLaterTime,
-              );
+class _RowActions extends StatelessWidget {
+  const _RowActions({
+    required this.highlighted,
+    this.onRunNow,
+    this.onPinTop,
+    this.onPinBottom,
+    this.onOpenSetting,
+  });
 
-              if (success) {
-                print("${model.taskName} 的下一次运行时间已更新为: $oneYearLaterTime");
-                // 显示成功通知
-                Get.snackbar(I18n.task_pin_bottom.tr, '${model.taskName} ${I18n.task_next_run_updated_to.tr}: $oneYearLaterTime',
-                    duration: const Duration(seconds: 1));
-                // 刷新任务状态
-                Get.find<ScriptService>().wsService.send(scriptName, 'get_state');
-              } else {
-                print("更新 ${model.taskName} 的下一次运行时间失败");
-                // 显示失败通知
-                Get.snackbar(I18n.operation_failed.tr, I18n.update_task_next_run_failed.tr,
-                    duration: const Duration(seconds: 1));
-              }
-            } catch (e) {
-              print("更新任务运行时间时出错: $e");
-              // 显示错误通知
-              Get.snackbar(I18n.operation_failed.tr, '${I18n.update_task_run_time_error.tr}: $e',
-                  duration: const Duration(seconds: 2));
-            }
-          },
-          child: Text(
-            '▼',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.black,
-                ),
+  /// 鼠标悬停或任务正在运行时高亮；否则保持低透明度但仍然可点（对齐目标图常驻按钮）
+  final bool highlighted;
+  final VoidCallback? onRunNow;
+  final VoidCallback? onPinTop;
+  final VoidCallback? onPinBottom;
+  final VoidCallback? onOpenSetting;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 130),
+      opacity: highlighted ? 1 : 0.55,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AppIconButton(
+            icon: const Icon(Icons.bolt_rounded, size: 14),
+            size: 23,
+            tooltip: I18n.run_now.tr,
+            onPressed: onRunNow,
           ),
-        ),
-      ).constrained(maxWidth: 30, maxHeight: 30),
-
-      const SizedBox(width: 5), // 按钮之间的间距
-
-      // 3. 原有的任务设置按钮（保持不变）
-      OutlinedButton(
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.all(0),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10.0),
+          const SizedBox(width: 1),
+          AppIconButton(
+            icon: const Icon(Icons.vertical_align_top_rounded, size: 13),
+            size: 23,
+            tooltip: I18n.task_pin_top.tr,
+            onPressed: onPinTop,
           ),
-        ),
-        onPressed: () => Get.find<NavCtrl>().switchContent(model.taskName),
-        child: Text(
-          I18n.task_setting.tr,
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-      ).constrained(maxWidth: 100, maxHeight: 30),
-    ].toRow(mainAxisAlignment: MainAxisAlignment.end); // 按钮右对齐
+          const SizedBox(width: 1),
+          AppIconButton(
+            icon: const Icon(Icons.vertical_align_bottom_rounded, size: 13),
+            size: 23,
+            tooltip: I18n.task_pin_bottom.tr,
+            onPressed: onPinBottom,
+          ),
+          const SizedBox(width: 1),
+          AppIconButton(
+            icon: const Icon(Icons.tune_rounded, size: 13),
+            size: 23,
+            tooltip: I18n.task_setting.tr,
+            onPressed: onOpenSetting,
+          ),
+        ],
+      ),
+    );
   }
 }

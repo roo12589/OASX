@@ -79,34 +79,76 @@ class DateTimePickerBase extends StatefulWidget {
 }
 
 class DateTimePickerBaseState extends State<DateTimePickerBase> {
-  // 占位
-
   // 鼠标是否在这个区域内
   bool _isHover = false;
 
+  /// 控件左侧的图标，由子类按语义覆盖
+  IconData get _icon => Icons.schedule_rounded;
+
   @override
   Widget build(BuildContext context) {
+    final hasValue = widget.value.isNotEmpty;
     return MouseRegion(
-        onEnter: (event) {
-          setState(() {
-            _isHover = true;
-          });
+      cursor: SystemMouseCursors.click,
+      onEnter: (event) {
+        setState(() {
+          _isHover = true;
+        });
+      },
+      onExit: (event) {
+        setState(() {
+          _isHover = false;
+        });
+      },
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          showPicker(context, widget.value);
         },
-        onExit: (event) {
-          setState(() {
-            _isHover = false;
-          });
-        },
-        child: GestureDetector(
-          child: Text(widget.value,
-              style: _isHover
-                  ? TextStyle(
-                      color: Theme.of(context).primaryColor, fontSize: 17)
-                  : const TextStyle(fontSize: 16)),
-          onTap: () {
-            showPicker(context, widget.value);
-          },
-        ));
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          height: 38,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color: _isHover ? AppColors.panelHi : AppColors.panelSoft,
+            borderRadius: AppRadius.chipR,
+            border: Border.all(
+              color: _isHover ? AppColors.borderStrong : AppColors.border,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                _icon,
+                size: 14,
+                color: _isHover ? AppColors.accent : AppColors.textMuted,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  hasValue ? widget.value : '--',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppText.mono.copyWith(
+                    color: hasValue
+                        ? (_isHover
+                            ? AppColors.textPrimary
+                            : AppColors.textSecondary)
+                        : AppColors.textMuted,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Icon(
+                Icons.expand_more_rounded,
+                size: 15,
+                color: AppColors.textMuted,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   // 重写
@@ -135,6 +177,9 @@ class DateTimePicker extends DateTimePickerBase {
 }
 
 class DateTimePickerState extends DateTimePickerBaseState {
+  @override
+  IconData get _icon => Icons.event_note_rounded;
+
   @override
   void showPicker(context, dynamic value) {
     Pickers.showMultiPicker(
@@ -187,6 +232,9 @@ class TimeDeltaPicker extends DateTimePickerBase {
 
 class TimeDeltaPickerState extends DateTimePickerBaseState {
   @override
+  IconData get _icon => Icons.timelapse_rounded;
+
+  @override
   void showPicker(context, dynamic value) {
     Pickers.showMultiPicker(
       context,
@@ -236,6 +284,9 @@ class TimePicker extends DateTimePickerBase {
 }
 
 class TimePickerState extends DateTimePickerBaseState {
+  @override
+  IconData get _icon => Icons.access_time_rounded;
+
   @override
   void showPicker(context, dynamic value) {
     Pickers.showMultiPicker(

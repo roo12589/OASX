@@ -235,4 +235,34 @@ class I18n {
   static const String go_oasx_release = 'Click to download';
   static const String tip = 'Tip';
   static const String copy_success = 'Copy success';
+
+  // ---------------------------------- 新版总览界面 ----------------------------------
+  static const String task_date_distribution = 'Task Date Distribution';
+  static const String next_7_days = 'Next 7 days';
+  static const String today = 'Today';
+  static const String items = 'items';
+  static const String tasks = 'Tasks';
+  static const String others = 'others';
+  static const String runtime_log = 'Runtime Log';
+  static const String error_log = 'Error Log';
+  static const String task_stats = 'Task Stats';
+  static const String expand = 'Expand';
+  static const String collapse = 'Collapse';
+  static const String assets = 'Assets';
+  static const String daily = 'Daily';
+  static const String auto_read = 'Auto read';
+  static const String no_task = 'No scheduled task';
+  static const String search_task = 'Search task';
+  static const String week_mon = 'Mon';
+  static const String week_tue = 'Tue';
+  static const String week_wed = 'Wed';
+  static const String week_thu = 'Thu';
+  static const String week_fri = 'Fri';
+  static const String week_sat = 'Sat';
+  static const String week_sun = 'Sun';
+  static const String run_now = 'Run now';
+  static const String back_to_overview = 'Back to overview';
+  static const String total = 'Total';
+  static const String assets_placeholder_tip =
+      'Placeholder data, asset detection is not enabled yet';
 }
