@@ -196,7 +196,7 @@ class ServerView extends StatelessWidget {
       trailingIcon: const Icon(Icons.expand_more_rounded, size: 18),
       title: AppSectionHeader(
         title: Text(I18n.setup_deploy.tr),
-        actions: const [
+        actions: [
           Icon(
             Icons.code_rounded,
             size: 15,
@@ -224,7 +224,7 @@ class ServerView extends StatelessWidget {
     return OutlinedButton.styleFrom(
       foregroundColor: AppColors.textSecondary,
       backgroundColor: AppColors.panelHi,
-      side: const BorderSide(color: AppColors.border),
+      side: BorderSide(color: AppColors.border),
       textStyle: const TextStyle(fontSize: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.button),

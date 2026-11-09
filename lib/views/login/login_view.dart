@@ -32,7 +32,7 @@ class LoginView extends StatelessWidget {
 
   Widget _login(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
@@ -96,7 +96,7 @@ class LoginView extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        const Text(
+        Text(
           'OASX',
           textAlign: TextAlign.center,
           style: TextStyle(
@@ -192,7 +192,7 @@ class LoginView extends StatelessWidget {
       foregroundColor: AppColors.accent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.card),
-        side: const BorderSide(color: AppColors.border),
+        side: BorderSide(color: AppColors.border),
       ),
       child: const Icon(Icons.developer_board_rounded, size: 18),
       onPressed: () {

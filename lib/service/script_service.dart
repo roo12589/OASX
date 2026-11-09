@@ -47,6 +47,8 @@ class ScriptService extends GetxService {
 
   Future<void> startScript(String name) async {
     await connectScript(name);
+    // 先在本地置为 updating，界面立刻有反馈；随后以服务端推送的状态为准
+    scriptModelMap[name]?.update(state: ScriptState.updating);
     await wsService.send(name, 'start');
     await wsService.send(name, 'get_state');
     await wsService.send(name, 'get_schedule');
@@ -93,6 +95,10 @@ class ScriptService extends GetxService {
   Future<void> stopScript(String name) async {
     if (!scriptModelMap.containsKey(name)) return;
     await wsService.send(name, 'stop');
+    // 主动查询一次状态：服务端停止后不一定会立刻推送 state，
+    // 不查的话界面会一直停在「运行中」，电源开关看起来像没反应。
+    await wsService.send(name, 'get_state');
+    await wsService.send(name, 'get_schedule');
   }
 
   void addScriptModel(dynamic sm) {

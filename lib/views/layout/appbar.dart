@@ -3,11 +3,12 @@ import 'package:get/get.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'package:oasx/config/design/app_theme.dart';
-import 'package:oasx/api/api_client.dart';
 import 'package:oasx/config/translation/i18n_content.dart';
 import 'package:oasx/controller/ctrl_nav.dart';
+import 'package:oasx/service/theme_service.dart';
 import 'package:oasx/utils/platform_utils.dart';
 import 'package:oasx/views/common/app_widgets.dart';
+import 'package:oasx/views/layout/script_tab_bar.dart';
 import 'package:oasx/views/layout/title.dart';
 
 /// 顶部窗口标题栏（Windows 自绘，可拖动）
@@ -62,7 +63,7 @@ PreferredSizeWidget _windowAppbar(BuildContext context, {bool? isCollapsed}) {
                   ),
                   const SizedBox(width: 6),
                   // 标签区自适应剩余空间，可横向滚动
-                  const Expanded(child: _ScriptTabStrip()),
+                  const Expanded(child: ScriptTabBar()),
                   const SizedBox(width: 6),
                   const _CaptionActions(),
                 ],
@@ -75,193 +76,6 @@ PreferredSizeWidget _windowAppbar(BuildContext context, {bool? isCollapsed}) {
   );
 }
 
-/// 标题内容区：Logo + "OASX" + 分隔 + 脚本标签
-/// 脚本标签条（Home / oas1 / oas2 ...），横向可滚动。
-///
-/// 仅在主页面且 NavCtrl 已注册时渲染；登录页/设置页没有 NavCtrl。
-class _ScriptTabStrip extends StatelessWidget {
-  const _ScriptTabStrip();
-
-  @override
-  Widget build(BuildContext context) {
-    if (Get.currentRoute != '/main' || !Get.isRegistered<NavCtrl>()) {
-      return const SizedBox.shrink();
-    }
-    return GetX<NavCtrl>(builder: (controller) {
-      final names = controller.navNameList
-          .where((e) => e != 'Home')
-          .toList(growable: false);
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Expanded(
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: EdgeInsets.zero,
-              itemCount: names.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 5),
-              itemBuilder: (context, i) => Center(
-                child: _ScriptTabChip(
-                  name: names[i],
-                  selected: controller.selectedIndex.value == i + 1,
-                  onTap: () => controller.switchScript(i + 1),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 5),
-          AppIconButton(
-            icon: const Icon(Icons.add_rounded),
-            size: 28,
-            tooltip: 'Add config',
-            border: true,
-            onPressed: () => _showAddConfigDialog(context),
-          ),
-        ],
-      );
-    });
-  }
-
-  Future<void> _showAddConfigDialog(BuildContext context) async {
-    final navCtrl = Get.find<NavCtrl>();
-    String newName = await ApiClient().getNewConfigName();
-    final template = 'template'.obs;
-    final configAll = await ApiClient().getConfigAll();
-    Get.defaultDialog(
-      title: I18n.config_add.tr,
-      middleText: '',
-      textConfirm: I18n.confirm.tr,
-      textCancel: I18n.cancel.tr,
-      onConfirm: () async {
-        await navCtrl.addConfig(newName, template.value);
-        Get.back();
-      },
-      content: SizedBox(
-        width: 260,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(I18n.new_name.tr, style: AppText.label),
-            const SizedBox(height: 4),
-            TextFormField(
-              initialValue: newName,
-              style: AppText.body,
-              onChanged: (v) => newName = v,
-            ),
-            const SizedBox(height: 10),
-            Text(I18n.config_copy_from_exist.tr, style: AppText.label),
-            const SizedBox(height: 4),
-            Obx(
-              () => DropdownButton<String>(
-                value: template.value,
-                isExpanded: true,
-                menuMaxHeight: 300,
-                items: configAll
-                    .map((e) => DropdownMenuItem(
-                          value: e.toString(),
-                          child: Text(e.toString(), style: AppText.body),
-                        ))
-                    .toList(),
-                onChanged: (v) => template.value = v.toString(),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ScriptTabChip extends StatefulWidget {
-  const _ScriptTabChip({
-    required this.name,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String name;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  State<_ScriptTabChip> createState() => _ScriptTabChipState();
-}
-
-class _ScriptTabChipState extends State<_ScriptTabChip> {
-  bool _hover = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final selected = widget.selected;
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hover = true),
-      onExit: (_) => setState(() => _hover = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        behavior: HitTestBehavior.opaque,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 130),
-          height: 30,
-          padding: const EdgeInsets.only(left: 12, right: 6),
-          decoration: BoxDecoration(
-            color: selected
-                ? AppColors.panelHi
-                : (_hover ? AppColors.panelSoft : Colors.transparent),
-            borderRadius: BorderRadius.circular(9),
-            border: Border.all(
-              color: selected ? AppColors.accent : AppColors.border,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                widget.name,
-                style: TextStyle(
-                  fontSize: 11.5,
-                  height: 1.1,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                  color: selected
-                      ? AppColors.textPrimary
-                      : AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(width: 7),
-              _PowerDot(active: selected),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PowerDot extends StatelessWidget {
-  const _PowerDot({required this.active});
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 16,
-      height: 16,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: active ? AppColors.accent : AppColors.panelSoft,
-        border: Border.all(
-          color: active ? AppColors.accent : AppColors.borderStrong,
-        ),
-      ),
-      child: Icon(
-        Icons.power_settings_new_rounded,
-        size: 9,
-        color: active ? const Color(0xFF06231A) : AppColors.textMuted,
-      ),
-    );
-  }
-}
-
 /// 右侧窗口操作按钮
 class _CaptionActions extends StatelessWidget {
   const _CaptionActions();
@@ -271,17 +85,25 @@ class _CaptionActions extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        // 「更多」：收纳添加配置 / 排序 / 隐藏任务
+        if (Get.currentRoute == '/main' && Get.isRegistered<NavCtrl>()) ...[
+          const ScriptToolsButton(),
+          const SizedBox(width: 2),
+        ],
         AppIconButton(
           icon: const Icon(Icons.palette_outlined),
           size: 28,
-          tooltip: 'Theme',
-          onPressed: () => Get.toNamed('/settings'),
+          tooltip: I18n.change_theme.tr,
+          onPressed: () {
+            final theme = Get.find<ThemeService>();
+            theme.toggle();
+          },
         ),
         const SizedBox(width: 2),
         AppIconButton(
           icon: const Icon(Icons.settings_outlined),
           size: 28,
-          tooltip: 'Settings',
+          tooltip: I18n.setting.tr,
           onPressed: () => Get.toNamed('/settings'),
         ),
         const SizedBox(width: 8),
@@ -388,7 +210,7 @@ PreferredSizeWidget _desktopAppbar(BuildContext context,
               onPressed: () => Scaffold.of(context).openDrawer(),
             ),
           Expanded(child: Align(alignment: Alignment.centerLeft, child: getTitle())),
-          const _ScriptTabStrip(),
+          const ScriptTabBar(),
         ],
       ),
     ),
@@ -401,6 +223,6 @@ PreferredSizeWidget _mobileTabletAppbar(BuildContext context,
     backgroundColor: AppColors.bg,
     elevation: 0,
     title: getTitle(),
-    actions: const [_ScriptTabStrip(), SizedBox(width: 8)],
+    actions: const [ScriptTabBar(), SizedBox(width: 8)],
   );
 }

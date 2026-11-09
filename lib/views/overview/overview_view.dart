@@ -45,7 +45,7 @@ class _DesktopOverview extends StatelessWidget {
         final total = constraints.maxWidth;
         final leftWidth = (total * 0.29).clamp(290.0, 400.0);
         final rightWidth = (total * 0.35).clamp(320.0, 520.0);
-        final showRight = total >= 1120;
+        final showRight = controller.uiPrefs.showAssetsPanel.value && total >= 1120;
         final showLeft = total >= 780;
 
         return Padding(
@@ -97,7 +97,10 @@ class _PortraitOverview extends StatelessWidget {
         children: [
           _CenterColumn(controller: controller, fixedLogHeight: 420),
           const SizedBox(height: AppMetrics.gap),
-          SizedBox(height: 300, child: const AssetPanel()),
+          if (controller.uiPrefs.showAssetsPanel.value) ...[
+            SizedBox(height: 300, child: const AssetPanel()),
+            const SizedBox(height: AppMetrics.gap),
+          ],
           const SizedBox(height: AppMetrics.gap),
           SizedBox(height: 560, child: _LeftColumn(controller: controller)),
         ],
@@ -135,8 +138,9 @@ class _LeftColumn extends StatelessWidget {
               onToggleSearch: controller.toggleSearch,
               onSearchChanged: controller.setSearchKeyword,
               onRunNow: controller.runNow,
-              onPinTop: controller.pinTop,
-              onPinBottom: controller.pinBottom,
+              onWaitNow: controller.waitNow,
+              onBury: controller.bury,
+              onSetNextRun: controller.setNextRun,
               onOpenSetting: controller.openTaskSetting,
             ),
           ),

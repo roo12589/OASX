@@ -67,7 +67,7 @@ class _ArgsGroupPanelState extends State<ArgsGroupPanel> {
               decoration: BoxDecoration(
                 color: _headerHover ? AppColors.panelHi : Colors.transparent,
                 border: _expanded
-                    ? const Border(
+                    ? Border(
                         bottom:
                             BorderSide(color: AppColors.borderSoft, width: 1),
                       )
@@ -78,7 +78,7 @@ class _ArgsGroupPanelState extends State<ArgsGroupPanel> {
                   AnimatedRotation(
                     turns: _expanded ? 0.25 : 0,
                     duration: const Duration(milliseconds: 160),
-                    child: const Icon(
+                    child: Icon(
                       Icons.chevron_right_rounded,
                       size: 16,
                       color: AppColors.textMuted,

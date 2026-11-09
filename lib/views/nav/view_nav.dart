@@ -28,20 +28,21 @@ class Nav extends StatelessWidget {
 
   Widget _navigationRail(BuildContext context) {
     return GetX<NavCtrl>(builder: (controller) {
+      final names = controller.navNameList;
       return Container(
         width: 64,
         color: AppColors.bgDeep,
         child: Column(
           children: [
             const SizedBox(height: 10),
-            for (int i = 0; i < controller.navNameList.length; i++) ...[
+            for (final name in names) ...[
               _NavIcon(
-                icon: i == 0
+                icon: name == 'Home'
                     ? Icons.home_rounded
                     : Icons.play_circle_outline_rounded,
-                selected: controller.selectedIndex.value == i,
-                tooltip: controller.navNameList[i],
-                onTap: () => controller.switchScript(i),
+                selected: controller.selectedScript.value == name,
+                tooltip: name,
+                onTap: () => controller.selectScript(name),
               ),
               const SizedBox(height: 4),
             ],

@@ -32,8 +32,6 @@ const Map<String, Color> colorSeedMap = {
   'Pink': Colors.pink
 };
 
-const Color _accent = AppColors.accent;
-
 const TextTheme _baseTextTheme = TextTheme(
   displayLarge: TextStyle(),
   displayMedium: TextStyle(),
@@ -52,163 +50,136 @@ const TextTheme _baseTextTheme = TextTheme(
   labelSmall: TextStyle(fontSize: 10.5),
 );
 
-TextTheme _textTheme(Brightness brightness) => _baseTextTheme
-    .apply(
-      fontFamily: 'LatoLato',
-      bodyColor: brightness == Brightness.dark
-          ? AppColors.textPrimary
-          : const Color(0xFF1D1F24),
-      displayColor: brightness == Brightness.dark
-          ? AppColors.textPrimary
-          : const Color(0xFF1D1F24),
-    )
-    .useSystemChineseFont(brightness);
+TextTheme _textTheme(AppPalette p) {
+  final base = _baseTextTheme.apply(
+    fontFamily: 'LatoLato',
+    bodyColor: p.textPrimary,
+    displayColor: p.textPrimary,
+  );
+  return base.useSystemChineseFont(p.brightness);
+}
 
-ThemeData darkTheme = _build(
-  brightness: Brightness.dark,
-  scheme: const ColorScheme.dark(
-    primary: _accent,
-    onPrimary: Color(0xFF06231A),
-    primaryContainer: AppColors.accentDark,
-    onPrimaryContainer: _accent,
-    secondary: Color(0xFF8FA0B8),
-    onSecondary: Color(0xFF0B0D10),
-    secondaryContainer: AppColors.panelHi,
-    onSecondaryContainer: AppColors.textPrimary,
-    tertiary: Color(0xFFB58CF0),
-    surface: AppColors.panel,
-    onSurface: AppColors.textPrimary,
-    surfaceContainerHighest: AppColors.panelHi,
-    surfaceContainerHigh: AppColors.panelSoft,
-    outline: AppColors.border,
-    outlineVariant: AppColors.borderSoft,
-    error: AppColors.danger,
-    onError: Color(0xFF2A0B0C),
-  ),
-  scaffold: AppColors.bg,
-  titleBar: AppColors.bg,
-);
+ColorScheme _scheme(AppPalette p) {
+  final isDark = p.isDark;
+  return ColorScheme(
+    brightness: p.brightness,
+    primary: p.accent,
+    onPrimary: p.accentFg,
+    primaryContainer: p.accentDark,
+    onPrimaryContainer: isDark ? p.accent : p.accentChipText,
+    secondary: isDark ? const Color(0xFF8FA0B8) : const Color(0xFF4E6478),
+    onSecondary: isDark ? const Color(0xFF0B0D10) : Colors.white,
+    secondaryContainer: p.panelHi,
+    onSecondaryContainer: p.textPrimary,
+    tertiary: p.purple,
+    onTertiary: isDark ? const Color(0xFF0B0D10) : Colors.white,
+    error: p.danger,
+    onError: isDark ? const Color(0xFF2A0B0C) : Colors.white,
+    surface: p.panel,
+    onSurface: p.textPrimary,
+    surfaceContainerHighest: p.panelHi,
+    surfaceContainerHigh: p.panelSoft,
+    onSurfaceVariant: p.textSecondary,
+    outline: p.border,
+    outlineVariant: p.borderSoft,
+    shadow: p.shadow,
+    scrim: isDark ? Colors.black : const Color(0x66101828),
+    inverseSurface: p.textPrimary,
+    onInverseSurface: p.panel,
+    inversePrimary: isDark ? p.accentDark : p.accent,
+  );
+}
 
-ThemeData lightTheme = _build(
-  brightness: Brightness.light,
-  scheme: ColorScheme.fromSeed(
-    seedColor: ColorSeed.baseColor.color,
-    brightness: Brightness.light,
-  ).copyWith(
-    primary: const Color(0xFF1E7B52),
-    surface: Colors.white,
-    outline: const Color(0xFFD8DAE0),
-    outlineVariant: const Color(0xFFE9EAF0),
-  ),
-  scaffold: const Color(0xFFF4F5F8),
-  titleBar: const Color(0xFFF4F5F8),
-);
-
-ThemeData _build({
-  required Brightness brightness,
-  required ColorScheme scheme,
-  required Color scaffold,
-  required Color titleBar,
-}) {
-  final isDark = brightness == Brightness.dark;
-  final textTheme = _textTheme(brightness);
+ThemeData _build(AppPalette p) {
+  final scheme = _scheme(p);
+  final textTheme = _textTheme(p);
   return ThemeData(
     useMaterial3: true,
-    brightness: brightness,
+    brightness: p.brightness,
     colorScheme: scheme,
-    scaffoldBackgroundColor: scaffold,
-    canvasColor: scaffold,
+    scaffoldBackgroundColor: p.bg,
+    canvasColor: p.bg,
     textTheme: textTheme,
     splashFactory: NoSplash.splashFactory,
     highlightColor: Colors.transparent,
     dividerTheme: DividerThemeData(
-      color: isDark ? AppColors.borderSoft : const Color(0xFFE6E7EC),
+      color: p.borderSoft,
       thickness: 1,
       space: 1,
     ),
     appBarTheme: AppBarTheme(
-      backgroundColor: titleBar,
+      backgroundColor: p.bg,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: false,
-      iconTheme: IconThemeData(
-          size: 17,
-          color: isDark ? AppColors.textSecondary : const Color(0xFF4A4E57)),
+      iconTheme: IconThemeData(size: 17, color: p.textSecondary),
       titleTextStyle: textTheme.titleMedium,
     ),
-    iconTheme: IconThemeData(
-      size: 17,
-      color: isDark ? AppColors.textSecondary : const Color(0xFF4A4E57),
-    ),
+    iconTheme: IconThemeData(size: 17, color: p.textSecondary),
     cardTheme: CardThemeData(
-      color: isDark ? AppColors.panel : Colors.white,
+      color: p.panel,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.panel),
-        side: BorderSide(
-            color: isDark ? AppColors.borderSoft : const Color(0xFFE6E7EC)),
+        side: BorderSide(color: p.borderSoft),
       ),
     ),
     navigationRailTheme: NavigationRailThemeData(
-      backgroundColor: titleBar,
-      indicatorColor: isDark ? AppColors.panelHi : const Color(0xFFE7ECF5),
-      selectedIconTheme: IconThemeData(
-          color: isDark ? AppColors.textPrimary : scheme.primary),
+      backgroundColor: p.bg,
+      indicatorColor: p.panelHi,
+      selectedIconTheme: IconThemeData(color: p.textPrimary),
       unselectedIconTheme: const IconThemeData(size: 18),
       labelType: NavigationRailLabelType.all,
     ),
     tooltipTheme: TooltipThemeData(
       waitDuration: const Duration(milliseconds: 400),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.panelHi : const Color(0xFF2A2D34),
+        color: p.isDark ? p.panelHi : const Color(0xFF2A2D34),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
-            color: isDark ? AppColors.borderStrong : Colors.transparent),
+            color: p.isDark ? p.borderStrong : Colors.transparent),
       ),
-      textStyle: const TextStyle(
-          fontSize: 11, height: 1.3, color: AppColors.textPrimary),
+      textStyle: TextStyle(
+        fontSize: 11,
+        height: 1.3,
+        color: p.isDark ? p.textPrimary : Colors.white,
+      ),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
     ),
     inputDecorationTheme: InputDecorationTheme(
       isDense: true,
       filled: true,
-      fillColor: isDark ? AppColors.panelSoft : const Color(0xFFF2F3F7),
+      fillColor: p.panelSoft,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      hintStyle: TextStyle(
-          fontSize: 12,
-          color: isDark ? AppColors.textMuted : const Color(0xFF9AA0AA)),
-      labelStyle: TextStyle(
-          fontSize: 12,
-          color: isDark ? AppColors.textSecondary : const Color(0xFF5C6169)),
+      hintStyle: TextStyle(fontSize: 12, color: p.textMuted),
+      labelStyle: TextStyle(fontSize: 12, color: p.textSecondary),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.button),
-        borderSide: BorderSide(
-            color: isDark ? AppColors.border : const Color(0xFFD8DAE0)),
+        borderSide: BorderSide(color: p.border),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.button),
-        borderSide: BorderSide(
-            color: isDark ? AppColors.border : const Color(0xFFD8DAE0)),
+        borderSide: BorderSide(color: p.border),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.button),
-        borderSide: BorderSide(color: isDark ? _accent : scheme.primary),
+        borderSide: BorderSide(color: p.accent),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-        foregroundColor: isDark ? AppColors.textSecondary : scheme.primary,
+        foregroundColor: p.textSecondary,
         textStyle: const TextStyle(fontSize: 12),
       ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         elevation: 0,
-        backgroundColor: isDark ? _accent : scheme.primary,
-        foregroundColor: const Color(0xFF06231A),
+        backgroundColor: p.accent,
+        foregroundColor: p.accentFg,
         textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.button),
@@ -217,9 +188,8 @@ ThemeData _build({
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        foregroundColor: isDark ? AppColors.textSecondary : scheme.primary,
-        side: BorderSide(
-            color: isDark ? AppColors.border : const Color(0xFFD8DAE0)),
+        foregroundColor: p.textSecondary,
+        side: BorderSide(color: p.border),
         textStyle: const TextStyle(fontSize: 11.5),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         shape: RoundedRectangleBorder(
@@ -229,56 +199,51 @@ ThemeData _build({
     ),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
-      backgroundColor: isDark ? AppColors.panelHi : const Color(0xFF2A2D34),
-      contentTextStyle:
-          const TextStyle(fontSize: 12, color: AppColors.textPrimary),
+      backgroundColor: p.isDark ? p.panelHi : const Color(0xFF2A2D34),
+      contentTextStyle: TextStyle(
+        fontSize: 12,
+        color: p.isDark ? p.textPrimary : Colors.white,
+      ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.card),
         side: BorderSide(
-            color: isDark ? AppColors.borderStrong : Colors.transparent),
+            color: p.isDark ? p.borderStrong : Colors.transparent),
       ),
     ),
     dialogTheme: DialogThemeData(
-      backgroundColor: isDark ? AppColors.panel : Colors.white,
+      backgroundColor: p.panel,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.panel),
-        side: BorderSide(
-            color: isDark ? AppColors.border : const Color(0xFFE6E7EC)),
+        side: BorderSide(color: p.border),
       ),
       titleTextStyle: textTheme.titleMedium,
-      contentTextStyle: TextStyle(
-          fontSize: 12.5,
-          color: isDark ? AppColors.textSecondary : const Color(0xFF4A4E57)),
+      contentTextStyle: TextStyle(fontSize: 12.5, color: p.textSecondary),
     ),
     popupMenuTheme: PopupMenuThemeData(
-      color: isDark ? AppColors.panelHi : Colors.white,
+      color: p.isDark ? p.panelHi : p.panel,
       surfaceTintColor: Colors.transparent,
       elevation: 8,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.card),
-        side: BorderSide(
-            color: isDark ? AppColors.border : const Color(0xFFE6E7EC)),
+        side: BorderSide(color: p.border),
       ),
-      textStyle: TextStyle(
-          fontSize: 12.5,
-          color: isDark ? AppColors.textPrimary : const Color(0xFF1D1F24)),
+      textStyle: TextStyle(fontSize: 12.5, color: p.textPrimary),
     ),
     scrollbarTheme: ScrollbarThemeData(
       thickness: WidgetStateProperty.all(6),
       radius: const Radius.circular(3),
       thumbColor: WidgetStateProperty.all(
-          isDark ? const Color(0xFF3A3E48) : const Color(0xFFC6C9D1)),
+        p.isDark ? const Color(0xFF3A3E48) : const Color(0xFFC0C6CF),
+      ),
       crossAxisMargin: 2,
     ),
     expansionTileTheme: ExpansionTileThemeData(
-      backgroundColor: isDark ? AppColors.panelSoft : const Color(0xFFF7F8FB),
-      collapsedBackgroundColor:
-          isDark ? AppColors.panelSoft : const Color(0xFFF7F8FB),
-      textColor: isDark ? AppColors.textPrimary : const Color(0xFF1D1F24),
-      iconColor: isDark ? AppColors.textSecondary : const Color(0xFF5C6169),
-      collapsedIconColor:
-          isDark ? AppColors.textSecondary : const Color(0xFF5C6169),
+      backgroundColor: p.panelSoft,
+      collapsedBackgroundColor: p.panelSoft,
+      textColor: p.textPrimary,
+      iconColor: p.textSecondary,
+      collapsedIconColor: p.textSecondary,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.card),
       ),
@@ -288,3 +253,7 @@ ThemeData _build({
     ),
   );
 }
+
+ThemeData get darkTheme => _build(AppPalette.dark);
+
+ThemeData get lightTheme => _build(AppPalette.light);

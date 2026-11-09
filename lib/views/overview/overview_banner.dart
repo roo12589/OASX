@@ -50,14 +50,24 @@ class OverviewBanner extends StatelessWidget {
                           title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 22,
                             height: 1.15,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFFEAF6FF),
+                            // 亮色主题下用深色字，暗色主题下用冷白字
+                            color: AppColors.panel.computeLuminance() < 0.5
+                                ? const Color(0xFFEAF6FF)
+                                : const Color(0xFF16303A),
                             letterSpacing: 2.0,
                             shadows: [
-                              Shadow(color: Color(0xCC3FB6E8), blurRadius: 18),
+                              Shadow(
+                                color: const Color(0xFF3FB6E8).withValues(
+                                  alpha: AppColors.panel.computeLuminance() < 0.5
+                                      ? 0.8
+                                      : 0.35,
+                                ),
+                                blurRadius: 18,
+                              ),
                             ],
                           ),
                         ),
@@ -141,24 +151,32 @@ class _BannerBackdrop extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      painter: _BackdropPainter(),
+      painter: _BackdropPainter(isDark: AppColors.panel.computeLuminance() < 0.5),
       child: const SizedBox.expand(),
     );
   }
 }
 
 class _BackdropPainter extends CustomPainter {
+  _BackdropPainter({required this.isDark});
+
+  final bool isDark;
+
   @override
   void paint(Canvas canvas, Size size) {
     final rect = Offset.zero & size;
 
+    // 底色：暗色用深海夜色，亮色用浅青灰，避免亮色主题里出现一块黑
+    final baseColors = isDark
+        ? const [Color(0xFF131A22), Color(0xFF0B0F14)]
+        : const [Color(0xFFE8F2F6), Color(0xFFF2F7FA)];
     canvas.drawRect(
       rect,
       Paint()
-        ..shader = const LinearGradient(
+        ..shader = LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF131A22), Color(0xFF0B0F14)],
+          colors: baseColors,
         ).createShader(rect),
     );
 
@@ -171,8 +189,8 @@ class _BackdropPainter extends CustomPainter {
       Paint()
         ..shader = RadialGradient(
           colors: [
-            const Color(0xFF1F7A93).withValues(alpha: 0.50),
-            const Color(0xFF12414F).withValues(alpha: 0.16),
+            const Color(0xFF1F7A93).withValues(alpha: isDark ? 0.50 : 0.22),
+            const Color(0xFF12414F).withValues(alpha: isDark ? 0.16 : 0.06),
             Colors.transparent,
           ],
           stops: const [0.0, 0.45, 1.0],
@@ -189,7 +207,7 @@ class _BackdropPainter extends CustomPainter {
       Paint()
         ..shader = RadialGradient(
           colors: [
-            const Color(0xFF6B4A2A).withValues(alpha: 0.30),
+            const Color(0xFF6B4A2A).withValues(alpha: isDark ? 0.30 : 0.12),
             Colors.transparent,
           ],
         ).createShader(
@@ -207,7 +225,8 @@ class _BackdropPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _BackdropPainter oldDelegate) =>
+      oldDelegate.isDark != isDark;
 }
 
 class _StateDot extends StatelessWidget {

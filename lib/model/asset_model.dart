@@ -7,7 +7,7 @@ import 'package:oasx/config/design/app_theme.dart';
 /// 注意：这里的数据目前是**占位数据**，用于先把界面结构做出来。
 /// 需求明确要求暂不接入游戏资源的提取/检测，所以不要在这里接 OCR 或游戏数据。
 class AssetItemModel {
-  const AssetItemModel({
+  AssetItemModel({
     required this.nameKey,
     required this.value,
     required this.icon,
@@ -26,7 +26,8 @@ class AssetItemModel {
   final String? delta;
   final bool deltaPositive;
 
-  static const List<AssetItemModel> placeholders = [
+  /// 占位数据。颜色随主题变化，所以用 getter 而不是 const 常量。
+  static List<AssetItemModel> get placeholders => [
     AssetItemModel(
         nameKey: '金币',
         value: '5412.3万',

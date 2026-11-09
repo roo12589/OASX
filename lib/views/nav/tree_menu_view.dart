@@ -15,7 +15,7 @@ class TreeMenuView extends StatelessWidget {
     return GetX<NavCtrl>(builder: (controller) {
       return Container(
         width: 178,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppColors.bg,
           border: Border(
             right: BorderSide(color: AppColors.borderSoft, width: 1),

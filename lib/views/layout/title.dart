@@ -40,7 +40,7 @@ class MainTitleBar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 9),
-          const Text(
+          Text(
             'OASX',
             style: TextStyle(
               fontSize: 13.5,
@@ -54,7 +54,7 @@ class MainTitleBar extends StatelessWidget {
           const SizedBox(width: 10),
           Text(
             name == 'Home' ? 'Home' : name,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               color: AppColors.textSecondary,
             ),
@@ -97,7 +97,7 @@ class _BaseTitle extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 9),
-        const Text(
+        Text(
           'OASX',
           style: TextStyle(
             fontSize: 13.5,
@@ -111,7 +111,7 @@ class _BaseTitle extends StatelessWidget {
         const SizedBox(width: 10),
         Text(
           text,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
             color: AppColors.textSecondary,
           ),

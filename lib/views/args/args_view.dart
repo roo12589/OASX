@@ -158,7 +158,7 @@ class _ArgsEmptyView extends StatelessWidget {
               borderRadius: AppRadius.cardR,
               border: Border.all(color: AppColors.borderSoft),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.tune_rounded,
               size: 20,
               color: AppColors.textMuted,
@@ -322,7 +322,7 @@ class _ArgumentViewState extends State<ArgumentView> {
       onChanged: onCheckboxChanged,
       activeColor: AppColors.accent,
       checkColor: const Color(0xFF06231A),
-      side: const BorderSide(color: AppColors.borderStrong, width: 1.2),
+      side: BorderSide(color: AppColors.borderStrong, width: 1.2),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
       visualDensity: VisualDensity.compact,
@@ -374,7 +374,7 @@ class _ArgumentViewState extends State<ArgumentView> {
           borderRadius: BorderRadius.circular(AppRadius.card),
           dropdownColor: AppColors.panelHi,
           menuMaxHeight: 320,
-          icon: const Icon(
+          icon: Icon(
             Icons.expand_more_rounded,
             size: 16,
             color: AppColors.textSecondary,

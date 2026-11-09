@@ -26,15 +26,27 @@ Widget content() {
       };
     }
     if (menu == 'Overview') {
-      return const Overview();
+      // 注意：不要写成 `const Overview()`。
+      // 切换脚本时本 builder 会重建，但若返回同一个 const 实例，
+      // Flutter 的 updateChild 会因 widget 完全相同而跳过子树重建，
+      // 导致总览页一直停留在旧脚本的数据上。
+      return Overview(key: ValueKey<String>('overview-$script'));
     }
-    return _TaskArgsPage(script: script, task: menu);
+    return _TaskArgsPage(
+      key: ValueKey<String>('args-$script-$menu'),
+      script: script,
+      task: menu,
+    );
   });
 }
 
 /// 参数配置页外框：面包屑 + 返回总览
 class _TaskArgsPage extends StatelessWidget {
-  const _TaskArgsPage({required this.script, required this.task});
+  const _TaskArgsPage({
+    super.key,
+    required this.script,
+    required this.task,
+  });
 
   final String script;
   final String task;
@@ -62,7 +74,7 @@ class _TaskArgsPage extends StatelessWidget {
                 const SizedBox(width: 10),
                 Text(script,
                     style: AppText.label.copyWith(color: AppColors.textMuted)),
-                const Padding(
+                Padding(
                   padding: EdgeInsets.symmetric(horizontal: 6),
                   child: Icon(Icons.chevron_right_rounded,
                       size: 14, color: AppColors.textMuted),

@@ -41,6 +41,20 @@ void main() {
       expect(future.dateLabel, isNotNull);
     });
 
+    test('跨年的日期标签带上年份（置底一年后不能被误读为今年）', () {
+      final now = DateTime.now();
+      final nextYear = DateTime(now.year + 1, now.month, now.day, 10, 0, 0);
+      String fmt(DateTime d) =>
+          '${d.year}-${d.month.toString().padLeft(2, '0')}-'
+          '${d.day.toString().padLeft(2, '0')} 10:00:00';
+
+      final buried = TaskItemModel('B', fmt(nextYear));
+      expect(buried.dateLabel, isNotNull);
+      expect(buried.dateLabel, contains('${now.year + 1}'),
+          reason: '跨年必须显示年份，否则「11-09」看起来像今年今天');
+      expect(buried.isToday, isFalse);
+    });
+
     test('相等性用于 Rx 去抖', () {
       const a = TaskItemModel('A', '2026-01-01 00:00:00');
       const b = TaskItemModel('A', '2026-01-01 00:00:00');

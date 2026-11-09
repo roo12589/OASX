@@ -2,12 +2,18 @@
 
 part of args;
 
-final dateYears = <String>['2023', '2024', '2025', '2026'];
+/// 年份列表不能硬编码：写死到 2026 会导致 2026 年之后无法选择，
+/// 也会让「置底一年后」这类操作选不到目标年份。
+final List<String> dateYears = () {
+  final nowYear = DateTime.now().year;
+  // 往前 3 年（便于回填历史）、往后 10 年
+  return List.generate(14, (i) => '${nowYear - 3 + i}');
+}();
 final dateMonths = List.generate(
         12, (index) => (index + 1) < 10 ? '0${index + 1}' : '${index + 1}')
     .toList();
-final dateDaysInMonth = List.generate(daysInMonth(),
-    (index) => (index + 1) < 10 ? '0${index + 1}' : '${index + 1}').toList();
+final dateDaysInMonth = List.generate(31,
+        (index) => (index + 1) < 10 ? '0${index + 1}' : '${index + 1}').toList();
 final dateDaysInWeek =
     List.generate(7, (index) => index < 10 ? '0$index' : '$index').toList();
 final dateHours =
@@ -139,7 +145,7 @@ class DateTimePickerBaseState extends State<DateTimePickerBase> {
                 ),
               ),
               const SizedBox(width: 6),
-              const Icon(
+              Icon(
                 Icons.expand_more_rounded,
                 size: 15,
                 color: AppColors.textMuted,

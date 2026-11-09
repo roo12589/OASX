@@ -211,7 +211,7 @@ class _TabButtonState extends State<_TabButton> {
                   ),
                   child: Text(
                     '${widget.badge}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 9,
                       height: 1.2,
                       fontWeight: FontWeight.w600,

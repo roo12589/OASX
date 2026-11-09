@@ -7,7 +7,9 @@ import 'package:oasx/controller/ctrl_nav.dart';
 import 'package:oasx/model/script_model.dart';
 import 'package:oasx/model/task_item_model.dart';
 import 'package:oasx/service/script_service.dart';
+import 'package:oasx/service/ui_prefs_service.dart';
 import 'package:oasx/views/overview/overview_model.dart';
+import 'package:oasx/views/overview/task_schedule_actions.dart';
 
 /// 总览控制器：任务列表聚合、搜索、任务操作
 class OverviewController extends GetxController with LogMixin {
@@ -23,6 +25,9 @@ class OverviewController extends GetxController with LogMixin {
 
   /// 搜索关键字
   final searchKeyword = ''.obs;
+
+  /// 资源检测（资产）面板的显隐，交给全局 UiPrefsService 持久化
+  UiPrefsService get uiPrefs => Get.find<UiPrefsService>();
 
   OverviewController({required this.name});
 
@@ -123,19 +128,25 @@ class OverviewController extends GetxController with LogMixin {
 
   Future<void> runNow(TaskItemModel model) async {
     if (model.taskName.isEmpty) return;
-    await _setNextRun(model.taskName, DateTime.now());
+    await _setNextRun(model.taskName, runNowTarget());
   }
 
-  Future<void> pinTop(TaskItemModel model) async {
+  /// 立即等待：把时间推后一点，让它退出待跑队列
+  Future<void> waitNow(TaskItemModel model) async {
     if (model.taskName.isEmpty) return;
-    await _setNextRun(model.taskName, DateTime.now());
+    await _setNextRun(model.taskName, waitNowTarget());
   }
 
-  Future<void> pinBottom(TaskItemModel model) async {
+  /// 置底：推到一年后
+  Future<void> bury(TaskItemModel model) async {
     if (model.taskName.isEmpty) return;
-    final now = DateTime.now();
-    await _setNextRun(
-        model.taskName, DateTime(now.year + 1, now.month, now.day));
+    await _setNextRun(model.taskName, buryTarget());
+  }
+
+  /// 快捷面板里选定的具体时间
+  Future<void> setNextRun(TaskItemModel model, DateTime target) async {
+    if (model.taskName.isEmpty) return;
+    await _setNextRun(model.taskName, target);
   }
 
   Future<void> runNextTaskNow() async {
@@ -145,7 +156,7 @@ class OverviewController extends GetxController with LogMixin {
   }
 
   Future<void> _setNextRun(String task, DateTime when) async {
-    final value = _formatDateTime(when);
+    final value = formatNextRun(when);
     final success = await ApiClient().putScriptArg(
       name,
       task,
@@ -173,11 +184,5 @@ class OverviewController extends GetxController with LogMixin {
   void openTaskSetting(TaskItemModel model) {
     if (model.taskName.isEmpty) return;
     Get.find<NavCtrl>().switchContent(model.taskName);
-  }
-
-  String _formatDateTime(DateTime dt) {
-    String two(int v) => v.toString().padLeft(2, '0');
-    return '${dt.year}-${two(dt.month)}-${two(dt.day)} '
-        '${two(dt.hour)}:${two(dt.minute)}:${two(dt.second)}';
   }
 }

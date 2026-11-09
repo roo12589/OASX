@@ -19,8 +19,9 @@ class TaskListPanel extends StatefulWidget {
     required this.onToggleSearch,
     required this.onSearchChanged,
     required this.onRunNow,
-    required this.onPinTop,
-    required this.onPinBottom,
+    required this.onWaitNow,
+    required this.onBury,
+    required this.onSetNextRun,
     required this.onOpenSetting,
   });
 
@@ -31,8 +32,9 @@ class TaskListPanel extends StatefulWidget {
   final VoidCallback onToggleSearch;
   final ValueChanged<String> onSearchChanged;
   final ValueChanged<TaskItemModel> onRunNow;
-  final ValueChanged<TaskItemModel> onPinTop;
-  final ValueChanged<TaskItemModel> onPinBottom;
+  final ValueChanged<TaskItemModel> onWaitNow;
+  final ValueChanged<TaskItemModel> onBury;
+  final void Function(TaskItemModel model, DateTime target) onSetNextRun;
   final ValueChanged<TaskItemModel> onOpenSetting;
 
   @override
@@ -107,7 +109,7 @@ class _TaskListPanelState extends State<TaskListPanel> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.search_rounded,
+                    Icon(Icons.search_rounded,
                         size: 13, color: AppColors.textMuted),
                     const SizedBox(width: 6),
                     Expanded(
@@ -117,7 +119,7 @@ class _TaskListPanelState extends State<TaskListPanel> {
                         autofocus: true,
                         style: AppText.body,
                         cursorColor: AppColors.accent,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           isDense: true,
                           filled: false,
                           border: InputBorder.none,
@@ -151,8 +153,10 @@ class _TaskListPanelState extends State<TaskListPanel> {
                         model: row.model,
                         state: row.state,
                         onRunNow: () => widget.onRunNow(row.model),
-                        onPinTop: () => widget.onPinTop(row.model),
-                        onPinBottom: () => widget.onPinBottom(row.model),
+                        onWaitNow: () => widget.onWaitNow(row.model),
+                        onBury: () => widget.onBury(row.model),
+                        onSetNextRun: (target) =>
+                            widget.onSetNextRun(row.model, target),
                         onOpenSetting: () => widget.onOpenSetting(row.model),
                       );
                     },
@@ -173,7 +177,7 @@ class _EmptyTasks extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.inbox_outlined, size: 26, color: AppColors.textMuted),
+          Icon(Icons.inbox_outlined, size: 26, color: AppColors.textMuted),
           const SizedBox(height: 8),
           Text(I18n.no_task.tr, style: AppText.caption),
         ],

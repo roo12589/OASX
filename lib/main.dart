@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 
 import 'package:oasx/service/locale_service.dart';
 import 'package:oasx/service/theme_service.dart';
+import 'package:oasx/service/ui_prefs_service.dart';
 import 'package:oasx/service/websocket_service.dart';
 import 'package:oasx/service/window_service.dart';
 import 'package:oasx/utils/logger.dart';
@@ -45,20 +46,32 @@ class OASXApp extends StatelessWidget {
     final themeService = Get.find<ThemeService>();
 
     return ResponsiveApp(builder: (context) {
-      return GetMaterialApp(
-        debugShowCheckedModeBanner: false,
-        scrollBehavior: GlobalBehavior(),
-        translations: localeService.messages,
-        locale: localeService.currentLocale,
-        fallbackLocale: localeService.fallbackLocale, //语言选择无效时，备用语言
-        title: 'OASX',
-        onInit: onInit,
-        initialRoute: Routes.initial,
-        getPages: Routes.routes,
-        theme: lightTheme,
-        darkTheme: darkTheme,
-        themeMode: themeService.themeMode,
-      );
+      return Obx(() {
+        final themeMode = themeService.themeMode;
+        // revision 变化时换 key，强制整棵树重建。
+        // AppColors 是普通 getter（非响应式），只换 ThemeData 不够——
+        // 已经 build 过的 widget 不会重新取色。
+        final revision = themeService.revision;
+        // 重建会新建 Navigator，因此要用当前路由作为 initialRoute，
+        // 否则切主题会跳回 Home。
+        final initialRoute =
+            Get.currentRoute.isEmpty ? Routes.initial : Get.currentRoute;
+        return GetMaterialApp(
+          key: ValueKey<int>(revision),
+          debugShowCheckedModeBanner: false,
+          scrollBehavior: GlobalBehavior(),
+          translations: localeService.messages,
+          locale: localeService.currentLocale,
+          fallbackLocale: localeService.fallbackLocale, //语言选择无效时，备用语言
+          title: 'OASX',
+          onInit: onInit,
+          initialRoute: initialRoute,
+          getPages: Routes.routes,
+          theme: lightTheme,
+          darkTheme: darkTheme,
+          themeMode: themeMode,
+        );
+      });
     });
   }
 
@@ -85,6 +98,7 @@ Future<void> initService() async {
     Get.putAsync(() async => LocaleService()),
     Get.putAsync(() async => ThemeService()),
     Get.putAsync(() async => WindowService()),
+    Get.putAsync(() async => UiPrefsService()),
   ]);
 
   Get.lazyPut(() => WebSocketService());

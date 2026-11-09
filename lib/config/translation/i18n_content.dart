@@ -265,4 +265,40 @@ class I18n {
   static const String total = 'Total';
   static const String assets_placeholder_tip =
       'Placeholder data, asset detection is not enabled yet';
+
+  // ---------------------------------- 配置选项卡 ----------------------------------
+  static const String hide_tab = 'Hide tab';
+  static const String hidden_tabs = 'Hidden tabs';
+  static const String show_all_tabs = 'Show all';
+  static const String move_left = 'Move left';
+  static const String move_right = 'Move right';
+  static const String open_overview = 'Open';
+  static const String no_visible_tab = 'No visible config tab';
+  static const String start_script = 'Start script';
+  static const String stop_script = 'Stop script';
+  static const String starting = 'Starting';
+  static const String stopping = 'Stopping';
+
+  // ---------------------------------- 任务时间调整 ----------------------------------
+  static const String wait_now = 'Wait now';
+  static const String bury_one_year = 'Bury (1 year)';
+  static const String adjust_run_time = 'Adjust run time';
+  static const String custom_time = 'Custom time';
+  static const String buried = 'BURIED';
+
+  // ---------------------------------- 更多菜单 / 排序 ----------------------------------
+  static const String more_actions = 'More';
+  static const String reorder_tabs = 'Reorder tabs';
+  static const String hide_tasks = 'Hide tasks';
+  static const String move_up = 'Move up';
+  static const String move_down = 'Move down';
+
+  // ---------------------------------- 资源检测 ----------------------------------
+  static const String show_assets = 'Show assets panel';
+  static const String assets_hidden_tip =
+      'Assets panel is hidden. Enable it in settings.';
+
+  // ---------------------------------- 主题 ----------------------------------
+  static const String theme_light = 'Light';
+  static const String theme_dark = 'Dark';
 }

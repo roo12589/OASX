@@ -1,28 +1,53 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 
-import 'package:oasx/config/theme.dart';
+import 'package:oasx/config/defaults.dart';
+import 'package:oasx/config/design/app_theme.dart';
+import 'package:oasx/model/const/storage_key.dart';
 
 /// 主题服务。
 ///
-/// 当前这套 UI 的目标设计（见 assets/design/ui_target.jpg）是一套暗色玻璃风格，
-/// 所有组件令牌（lib/config/design/app_theme.dart）都是按暗色调校的，
-/// 因此这里固定使用暗色，避免出现「暗色面板 + 亮色输入框」的混搭。
-///
-/// 以后要支持亮色主题时，应把 AppColors 改成随主题切换的调色板，
-/// 而不是只切 ThemeData。
+/// 默认亮色（[kDefaultDarkMode] = false），用户可在设置页/标题栏切换，
+/// 选择会持久化。切换时 [applyPalette] 更新全局调色板，
+/// [AppColors] 的 getter 立即返回新颜色。
 class ThemeService extends GetxService {
-  final _dark = true.obs;
-  final _color = ColorSeed.baseColor.color.obs;
+  final _storage = GetStorage();
+
+  final _dark = kDefaultDarkMode.obs;
+
+  /// 主题版本号：每次切换自增，作为重建整棵树的 key。
+  /// 颜色是普通 getter，不会触发响应式刷新，必须让界面整体重建。
+  final _revision = 0.obs;
 
   bool get isDarkMode => _dark.value;
-  Color get color => _color.value;
 
-  ThemeMode get themeMode => ThemeMode.dark;
+  int get revision => _revision.value;
+
+  ThemeMode get themeMode => _dark.value ? ThemeMode.dark : ThemeMode.light;
+
+  /// 当前调色板（构建非 widget 场景的颜色时可用）
+  AppPalette get palette => _dark.value ? AppPalette.dark : AppPalette.light;
 
   @override
   void onInit() {
-    _dark.value = true;
+    _dark.value =
+        _storage.read<bool>(StorageKey.dark.name) ?? kDefaultDarkMode;
+    applyPalette(dark: _dark.value);
     super.onInit();
   }
+
+  void switchTheme([bool? dark]) {
+    final next = dark ?? !_dark.value;
+    if (next == _dark.value) return;
+    _dark.value = next;
+    _storage.write(StorageKey.dark.name, next);
+    applyPalette(dark: next);
+    // 自增版本号，GetMaterialApp 会用 key 重建整棵树
+    _revision.value++;
+    Get.changeThemeMode(themeMode);
+    Get.forceAppUpdate();
+  }
+
+  void toggle() => switchTheme(!_dark.value);
 }

@@ -33,16 +33,22 @@ class TaskItemModel {
     if (dt == null) return true;
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    return !dt.isAfter(today.add(const Duration(days: 1) - const Duration(milliseconds: 1)));
+    return !dt.isAfter(
+        today.add(const Duration(days: 1) - const Duration(milliseconds: 1)));
   }
 
-  /// 非今天的任务额外显示日期，避免"20:44"这类时间被误读为今天
+  /// 非今天的任务额外显示日期，避免"20:44"这类时间被误读为今天。
+  ///
+  /// 跨年时带上年份——置底（一年后）如果只显示「11-09」，
+  /// 会被误读成今年今天。
   String? get dateLabel {
     final dt = nextRunDateTime;
     if (dt == null) return null;
     if (isToday) return null;
-    return '${dt.month.toString().padLeft(2, '0')}-'
-        '${dt.day.toString().padLeft(2, '0')}';
+    final mm = dt.month.toString().padLeft(2, '0');
+    final dd = dt.day.toString().padLeft(2, '0');
+    final sameYear = dt.year == DateTime.now().year;
+    return sameYear ? '$mm-$dd' : '${dt.year}-$mm-$dd';
   }
 
   @override

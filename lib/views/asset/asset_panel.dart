@@ -12,7 +12,7 @@ class AssetPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const items = AssetItemModel.placeholders;
+    final items = AssetItemModel.placeholders;
     return AppPanel(
       padding: EdgeInsets.zero,
       clip: true,
@@ -79,7 +79,7 @@ class AssetPanel extends StatelessWidget {
                 const Spacer(),
                 Tooltip(
                   message: I18n.assets_placeholder_tip.tr,
-                  child: const Icon(Icons.info_outline_rounded,
+                  child: Icon(Icons.info_outline_rounded,
                       size: 13, color: AppColors.textMuted),
                 ),
               ],
@@ -163,7 +163,7 @@ class _AssetCellState extends State<_AssetCell> {
                     item.value,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       height: 1.1,
                       fontWeight: FontWeight.w600,

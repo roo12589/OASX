@@ -5,6 +5,8 @@ import 'package:oasx/config/design/app_theme.dart';
 import 'package:oasx/config/translation/i18n_content.dart';
 import 'package:oasx/controller/settings.dart';
 import 'package:oasx/service/locale_service.dart';
+import 'package:oasx/service/theme_service.dart';
+import 'package:oasx/service/ui_prefs_service.dart';
 import 'package:oasx/views/common/app_widgets.dart';
 import 'package:oasx/views/layout/appbar.dart';
 
@@ -37,6 +39,7 @@ class SettingsView extends StatelessWidget {
                     _ThemeSection(),
                     SizedBox(height: AppMetrics.gap),
                     _LanguageSection(),
+                    _AssetsSection(),
                     SizedBox(height: AppMetrics.gap),
                     _ServerSection(),
                     SizedBox(height: AppMetrics.gap),
@@ -208,43 +211,61 @@ class _ThemeSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 当前 UI 是一套暗色设计（令牌全部按暗色调校），亮色主题尚未适配，
-    // 所以这里显示固定为暗色，不提供切换。
-    return _Section(
-      title: I18n.change_theme.tr,
-      actions: const [
-        Icon(Icons.palette_outlined, size: 15, color: AppColors.textMuted),
-      ],
-      child: Align(
-        alignment: Alignment.centerLeft,
+    final themeService = Get.find<ThemeService>();
+    return Obx(() {
+      final isDark = themeService.isDarkMode;
+      return _Section(
+        title: I18n.change_theme.tr,
+        actions: [
+          Icon(Icons.palette_outlined, size: 15, color: AppColors.textMuted),
+        ],
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: _Segmented(
+            children: [
+              _Segment(
+                selected: !isDark,
+                label: I18n.theme_light.tr,
+                onTap: () => themeService.switchTheme(false),
+              ),
+              _Segment(
+                selected: isDark,
+                label: I18n.theme_dark.tr,
+                onTap: () => themeService.switchTheme(true),
+              ),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+}
+
+/// 资源检测（资产面板）显隐 —— 默认隐藏
+class _AssetsSection extends StatelessWidget {
+  const _AssetsSection();
+
+  @override
+  Widget build(BuildContext context) {
+    final prefs = Get.find<UiPrefsService>();
+    return Obx(
+      () => _Section(
+        title: I18n.assets.tr,
+        actions: [
+          Icon(Icons.dashboard_customize_outlined,
+              size: 15, color: AppColors.textMuted),
+        ],
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppColors.panelHi,
-                borderRadius: BorderRadius.circular(AppRadius.chip),
-                border: Border.all(color: AppColors.accent),
+            Expanded(
+              child: Text(
+                I18n.show_assets.tr,
+                style: AppText.body.copyWith(color: AppColors.textSecondary),
               ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.dark_mode_rounded,
-                      size: 14, color: AppColors.accent),
-                  SizedBox(width: 6),
-                  Text(
-                    'Dark',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      height: 1.2,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.accent,
-                    ),
-                  ),
-                ],
-              ),
+            ),
+            Switch.adaptive(
+              value: prefs.showAssetsPanel.value,
+              onChanged: prefs.setShowAssetsPanel,
             ),
           ],
         ),
@@ -264,7 +285,7 @@ class _LanguageSection extends StatelessWidget {
       final bool isEn = localeService.language.value == 'en-US';
       return _Section(
         title: I18n.change_language.tr,
-        actions: const [
+        actions: [
           Icon(Icons.translate_rounded, size: 15, color: AppColors.textMuted),
         ],
         child: Align(
@@ -296,7 +317,7 @@ class _ServerSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return _Section(
       title: I18n.setup_deploy.tr,
-      actions: const [
+      actions: [
         Icon(Icons.dns_outlined, size: 15, color: AppColors.textMuted),
       ],
       child: _PanelActionButton(
@@ -328,7 +349,7 @@ class _AccountSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return _Section(
       title: 'account'.tr,
-      actions: const [
+      actions: [
         Icon(Icons.person_outline_rounded, size: 15, color: AppColors.textMuted),
       ],
       child: _PanelActionButton(
