@@ -1,11 +1,15 @@
 import 'dart:math';
 
-import 'package:easy_rich_text/easy_rich_text.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:styled_widget/styled_widget.dart';
-import 'log_mixin.dart';
 
+import 'package:oasx/config/design/app_theme.dart';
+import 'package:oasx/component/log/log_mixin.dart';
+import 'package:oasx/config/translation/i18n_content.dart';
+import 'package:oasx/views/common/app_widgets.dart';
+
+/// 通用日志组件（设置页 / 服务端页 / 任意页面复用）
 class LogWidget extends StatefulWidget {
   final LogMixin controller;
   final String title;
@@ -37,17 +41,14 @@ class _LogWidgetState extends State<LogWidget> {
   void initState() {
     super.initState();
     _scrollController ??= ScrollController(
-        initialScrollOffset: widget.controller.savedScrollOffsetVal);
-    // 位置调整
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+        initialScrollOffset: widget.controller.savedScrollOffsetVal);    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (widget.controller.autoScroll.value) {
-        // 自动滚动模式：强制滚动到底部
         _scrollLogs(force: true, scrollOffset: -1);
       } else if (widget.controller.savedScrollOffsetVal > 0) {
-        // 非自动滚动模式：恢复到保存的位置
         _scrollLogs(
-            force: true, scrollOffset: widget.controller.savedScrollOffsetVal);
+            force: true,
+            scrollOffset: widget.controller.savedScrollOffsetVal.toInt());
       }
     });
     widget.controller.scrollLogs = _scrollLogs;
@@ -56,6 +57,7 @@ class _LogWidgetState extends State<LogWidget> {
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         TopLogPanel(
           title: widget.title,
@@ -95,37 +97,23 @@ class _LogWidgetState extends State<LogWidget> {
     super.dispose();
   }
 
-  void _scrollLogs({isJump = false, force = false, scrollOffset = -1}) {
+  void _scrollLogs({bool isJump = false, bool force = false, int scrollOffset = -1}) {
     if (_scrollController == null || !_scrollController!.hasClients) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController == null || !_scrollController!.hasClients) return;
-      // 强制滚动或自动滚动才允许滚动
       if (!force && !widget.controller.autoScroll.value) return;
       final double targetPos = scrollOffset == -1
           ? _scrollController!.position.maxScrollExtent
-          : scrollOffset;
-      if (isJump) {
-        _scrollController!.jumpTo(targetPos);
-        return;
-      }
+          : scrollOffset.toDouble();
       final double currentPos = _scrollController!.offset;
       final double distance = (targetPos - currentPos).abs();
-      // 使用非线性函数计算动画时间
-      // 1000px 约 300ms,10000px 约 1000ms
-      int animateMs = (sqrt(distance) * 10).toInt();
-      const int minAnimateMs = 100; // 最快速度
-      const int maxAnimateMs = 1000; // 最慢速度
-      // 限制范围
-      animateMs = animateMs.clamp(minAnimateMs, maxAnimateMs);
-      // 滚动
+      int animateMs = (sqrt(distance) * 10).toInt().clamp(100, 1000);
       _scrollController!
           .animateTo(targetPos,
-              duration: Duration(milliseconds: animateMs),
-              curve: Curves.easeOut)
+              duration: Duration(milliseconds: animateMs), curve: Curves.easeOut)
           .whenComplete(() {
         if (_scrollController == null || !_scrollController!.hasClients) return;
         final latestExtent = _scrollController!.position.maxScrollExtent;
-        // 矫正滚动位置(最底部或自动滚动且最新位置不同,跳转到新的最底部)
         if ((scrollOffset == -1 || widget.controller.autoScroll.value) &&
             latestExtent > targetPos) {
           _scrollController!.jumpTo(latestExtent);
@@ -138,16 +126,10 @@ class _LogWidgetState extends State<LogWidget> {
     if (_scrollController == null || !_scrollController!.hasClients) return;
     final maxExtent = _scrollController!.position.maxScrollExtent;
     final currentOffset = _scrollController!.offset;
-
-    // 判断是否在底部（容差80像素）
     final isAtBottom = currentOffset >= (maxExtent - 80);
-
-    // 更新自动滚动状态
     if (isAtBottom && !widget.controller.autoScroll.value) {
-      // 用户滚动到底部，开启自动滚动
       widget.controller.autoScroll.value = true;
     } else if (!isAtBottom && widget.controller.autoScroll.value) {
-      // 用户向上滚动超过80像素，关闭自动滚动
       widget.controller.autoScroll.value = false;
     }
   }
@@ -176,28 +158,32 @@ class TopLogPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.fromLTRB(0, 0, 0, 10),
+    return AppPanel(
+      padding: EdgeInsets.zero,
+      margin: const EdgeInsets.only(bottom: AppMetrics.gapSmall),
+      clip: true,
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 顶部按钮控制面板
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(title,
-                  textAlign: TextAlign.left,
-                  style: Theme.of(context).textTheme.titleMedium),
-              const Spacer(),
-              if (enableAutoScroll ?? true) _autoScrollButton(),
-              if (enableCopy ?? true) _copyButton(),
-              if (enableClear ?? true) _deleteButton(),
-              if (enableCollapse ?? true) _collapseButton(),
-            ],
-          ).paddingAll(8).constrained(height: 48),
-          // 底部
+          SizedBox(
+            height: 42,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Row(
+                children: [
+                  Text(title, style: AppText.sectionTitle),
+                  const Spacer(),
+                  if (enableAutoScroll ?? true) _autoScrollButton(),
+                  if (enableCopy ?? true) _copyButton(),
+                  if (enableClear ?? true) _deleteButton(),
+                  if (enableCollapse ?? true) _collapseButton(),
+                ],
+              ),
+            ),
+          ),
           if (bottomChild != null) ...[
-            const Divider(height: 1),
+            const AppDivider(),
             bottomChild!,
           ],
         ],
@@ -206,38 +192,47 @@ class TopLogPanel extends StatelessWidget {
   }
 
   Widget _copyButton() {
-    return IconButton(
-      icon: const Icon(Icons.content_copy_rounded, size: 18),
-      onPressed: () => controller.copyLogs(),
+    return AppIconButton(
+      icon: const Icon(Icons.content_copy_rounded, size: 13),
+      size: 24,
+      tooltip: I18n.copy_success.tr,
+      onPressed: controller.copyLogs,
     );
   }
 
   Widget _autoScrollButton() {
-    return Obx(() => IconButton(
+    return Obx(() => AppIconButton(
           icon: Icon(
-            controller.autoScroll.value ? Icons.flash_on : Icons.flash_off,
-            size: 20,
+            controller.autoScroll.value
+                ? Icons.flash_on_rounded
+                : Icons.flash_off_rounded,
+            size: 14,
           ),
+          size: 24,
+          selected: controller.autoScroll.value,
           onPressed: controller.toggleAutoScroll,
         ));
   }
 
   Widget _deleteButton() {
-    return IconButton(
-      icon: const Icon(Icons.delete_outlined, size: 20),
-      onPressed: () => controller.clearLog(),
+    return AppIconButton(
+      icon: const Icon(Icons.delete_outline_rounded, size: 14),
+      size: 24,
+      tooltip: I18n.clear_log.tr,
+      onPressed: controller.clearLog,
     );
   }
 
   Widget _collapseButton() {
-    return Obx(() => IconButton(
+    return Obx(() => AppIconButton(
           icon: Icon(
             controller.collapseLog.value
-                ? Icons.expand_more
-                : Icons.expand_less,
-            size: 20,
+                ? Icons.expand_more_rounded
+                : Icons.expand_less_rounded,
+            size: 16,
           ),
-          onPressed: () => controller.toggleCollapse(),
+          size: 24,
+          onPressed: controller.toggleCollapse,
         ));
   }
 }
@@ -257,98 +252,32 @@ class LogContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.fromLTRB(0, 0, 0, 10),
-      child: NotificationListener<UserScrollNotification>(
-        onNotification: (notification) {
-          onUserScroll();
-          return false;
-        },
-        child: Obx(() => ListView.builder(
-              controller: scrollController,
-              itemCount: controller.logs.length,
-              itemBuilder: (context, index) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 1),
-                child: EasyRichText(
-                  controller.logs[index],
-                  patternList: _buildPatterns(),
-                  selectable: true,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  defaultStyle: _selectStyle(context),
+    return AppPanel(
+      padding: EdgeInsets.zero,
+      margin: const EdgeInsets.only(bottom: AppMetrics.gapSmall),
+      clip: true,
+      child: Container(
+        constraints: const BoxConstraints.expand(),
+        child: NotificationListener<UserScrollNotification>(
+          onNotification: (notification) {
+            onUserScroll();
+            return false;
+          },
+          child: Obx(() => ListView.builder(
+                controller: scrollController,
+                padding: const EdgeInsets.all(10),
+                itemCount: controller.logs.length,
+                itemBuilder: (context, index) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 1),
+                  child: SelectableText(
+                    controller.logs[index],
+                    maxLines: 1,
+                    style: AppText.mono,
+                  ),
                 ),
-              ),
-            ).paddingAll(10)),
-      ),
-    ).constrained(width: double.infinity, height: double.infinity);
-  }
-
-  List<EasyRichTextPattern> _buildPatterns() {
-    return [
-      const EasyRichTextPattern(
-        targetString: 'INFO',
-        style: TextStyle(
-          color: Color.fromARGB(255, 55, 109, 136),
-          fontFeatures: [FontFeature.tabularFigures()],
-        ),
-        suffixInlineSpan: TextSpan(
-          style: TextStyle(fontFeatures: [FontFeature.tabularFigures()]),
-          text: '      ',
+              )),
         ),
       ),
-      const EasyRichTextPattern(
-        targetString: 'WARNING',
-        style: TextStyle(
-          color: Colors.yellow,
-          fontFeatures: [FontFeature.tabularFigures()],
-        ),
-      ),
-      const EasyRichTextPattern(
-        targetString: 'ERROR',
-        style: TextStyle(
-          color: Colors.red,
-          fontFeatures: [FontFeature.tabularFigures()],
-        ),
-        suffixInlineSpan: TextSpan(
-          style: TextStyle(fontFeatures: [FontFeature.tabularFigures()]),
-          text: '    ',
-        ),
-      ),
-      const EasyRichTextPattern(
-        targetString: 'CRITICAL',
-        style: TextStyle(
-          color: Colors.red,
-          fontFeatures: [FontFeature.tabularFigures()],
-        ),
-        suffixInlineSpan: TextSpan(text: '   '),
-      ),
-      const EasyRichTextPattern(
-        targetString: r'(\d{2}:\d{2}:\d{2}\.\d{3})',
-        style: TextStyle(
-          color: Colors.cyan,
-          fontFeatures: [FontFeature.tabularFigures()],
-        ),
-      ),
-      const EasyRichTextPattern(
-        targetString: r'[\{\[\(\)\]\}]',
-        style: TextStyle(fontWeight: FontWeight.bold),
-      ),
-      const EasyRichTextPattern(
-          targetString: 'True', style: TextStyle(color: Colors.lightGreen)),
-      const EasyRichTextPattern(
-          targetString: 'False', style: TextStyle(color: Colors.red)),
-      const EasyRichTextPattern(
-          targetString: 'None', style: TextStyle(color: Colors.purple)),
-      const EasyRichTextPattern(
-        targetString: r'(══*══)|(──*──)',
-        style: TextStyle(color: Colors.lightGreen),
-      )
-    ];
-  }
-
-  TextStyle _selectStyle(BuildContext context) {
-    return context.mediaQuery.orientation == Orientation.portrait
-        ? Theme.of(context).textTheme.bodySmall!
-        : Theme.of(context).textTheme.titleSmall!;
+    );
   }
 }

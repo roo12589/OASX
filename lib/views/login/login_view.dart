@@ -1,15 +1,17 @@
 library login;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:oasx/model/const/storage_key.dart';
-import 'package:styled_widget/styled_widget.dart';
-import 'package:flutter_form_builder/flutter_form_builder.dart';
 
 import 'package:oasx/api/api_client.dart';
-import 'package:oasx/views/layout/appbar.dart';
+import 'package:oasx/config/design/app_theme.dart';
+import 'package:oasx/config/translation/i18n_content.dart';
+import 'package:oasx/model/const/storage_key.dart';
 import 'package:oasx/utils/platform_utils.dart';
+import 'package:oasx/views/common/app_widgets.dart';
+import 'package:oasx/views/layout/appbar.dart';
 
 part './login_binding.dart';
 part '../../controller/login/login_controller.dart';
@@ -21,54 +23,98 @@ class LoginView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.bg,
       appBar: buildPlatformAppBar(context, isCollapsed: false),
       floatingActionButton: PlatformUtils.isWindows ? _serverButton() : null,
-      // floatingActionButtonLocation: FloatingActionButtonLocation.centerTop,
       body: _login(context),
     );
   }
 
   Widget _login(BuildContext context) {
-    List<double> maxWidthHigh = switch (Theme.of(context).platform) {
-      TargetPlatform.windows => [400, 500],
-      TargetPlatform.linux => [400, 500],
-      TargetPlatform.macOS => [400, 500],
-      _ => [],
-    };
-    return FormBuilder(
-      key: _formKey,
-      child: <Widget>[
-        _admin(context),
-        _address(),
-        _username(),
-        _password(),
-        _signin()
-      ].toColumn(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisAlignment: MainAxisAlignment.center),
-    )
-        .padding(vertical: 10)
-        // .card(
-        //     elevation: 10,
-        //     shape: RoundedRectangleBorder(
-        //       borderRadius: BorderRadius.circular(20),
-        //     ))
-        .constrained(
-            maxHeight: maxWidthHigh.isNotEmpty ? maxWidthHigh[0] : 500,
-            maxWidth: maxWidthHigh.isNotEmpty ? maxWidthHigh[1] : 400)
-        .alignment(Alignment.center);
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [AppColors.bgDeep, AppColors.bg],
+        ),
+      ),
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final double minHeight = constraints.maxHeight - 48 > 0
+              ? constraints.maxHeight - 48
+              : 0;
+          return SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: minHeight),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 400),
+                  child: AppPanel(
+                    padding: const EdgeInsets.fromLTRB(28, 28, 28, 26),
+                    child: FormBuilder(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _brand(),
+                          const SizedBox(height: 26),
+                          _address(),
+                          const SizedBox(height: 14),
+                          _username(),
+                          const SizedBox(height: 14),
+                          _password(),
+                          const SizedBox(height: 26),
+                          _signin(),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
-  Widget _admin(BuildContext context) {
-    ThemeData theme = Theme.of(context);
-    return Text(
-      'Admin Login',
-      textAlign: TextAlign.center,
-      style: TextStyle(
-          color: theme.colorScheme.primary,
-          fontSize: 24,
-          fontWeight: FontWeight.bold),
-    ).padding(horizontal: 20);
+  Widget _brand() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadius.chip),
+          child: Image.asset(
+            'assets/images/Icon-app.png',
+            width: 42,
+            height: 42,
+            fit: BoxFit.cover,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'OASX',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 24,
+            height: 1.15,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.8,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          I18n.project_statement.tr,
+          textAlign: TextAlign.center,
+          style: AppText.label,
+        ),
+      ],
+    );
   }
 
   Widget _username() {
@@ -76,11 +122,13 @@ class LoginView extends StatelessWidget {
     return FormBuilderTextField(
       name: 'username',
       initialValue: loginController.username.value,
-      decoration: const InputDecoration(labelText: 'Username'),
-      // validator: FormBuilderValidators.compose([
-      //   FormBuilderValidators.maxLength(1, errorText: "Account does not exist"),
-      // ]),
-    ).padding(horizontal: 20, top: 5);
+      style: AppText.body,
+      decoration: const InputDecoration(
+        labelText: 'Username',
+        prefixIcon: Icon(Icons.person_outline_rounded, size: 16),
+        prefixIconConstraints: BoxConstraints(minWidth: 38, minHeight: 38),
+      ),
+    );
   }
 
   Widget _password() {
@@ -88,12 +136,14 @@ class LoginView extends StatelessWidget {
     return FormBuilderTextField(
       name: 'password',
       initialValue: loginController.password.value,
-      decoration: const InputDecoration(labelText: 'Password'),
+      style: AppText.body,
+      decoration: const InputDecoration(
+        labelText: 'Password',
+        prefixIcon: Icon(Icons.lock_outline_rounded, size: 16),
+        prefixIconConstraints: BoxConstraints(minWidth: 38, minHeight: 38),
+      ),
       obscureText: true,
-      // validator: FormBuilderValidators.compose([
-      //   FormBuilderValidators.maxLength(1, errorText: "Incorrect password"),
-      // ]),
-    ).padding(horizontal: 20, top: 20);
+    );
   }
 
   Widget _address() {
@@ -101,32 +151,53 @@ class LoginView extends StatelessWidget {
     return FormBuilderTextField(
       name: 'address',
       initialValue: loginController.address.value,
-      decoration: const InputDecoration(labelText: 'Address'),
-      // validator: FormBuilderValidators.compose([
-      //   FormBuilderValidators.required(),
-      //   FormBuilderValidators.match(RegExp(r"\\d+.\\d+.\\d+.\\d+:\\d+"),
-      //       errorText: "Format: [ip]:[port]"),
-      // ]),
-    ).padding(horizontal: 20, top: 20);
+      style: AppText.body,
+      decoration: const InputDecoration(
+        labelText: 'Address',
+        prefixIcon: Icon(Icons.dns_outlined, size: 16),
+        prefixIconConstraints: BoxConstraints(minWidth: 38, minHeight: 38),
+      ),
+    );
   }
 
   Widget _signin() {
     LoginController loginController = Get.find<LoginController>();
-    return ElevatedButton(
-      onPressed: () async => {
-        if (_formKey.currentState?.saveAndValidate() ?? false)
-          {await loginController.toMain(data: _formKey.currentState!.value)}
-      },
-      child: const Text('Login'),
-    ).padding(horizontal: 20, top: 40);
+    return SizedBox(
+      height: 42,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.accent,
+          foregroundColor: const Color(0xFF06231A),
+          elevation: 0,
+          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.button),
+          ),
+        ),
+        onPressed: () async {
+          if (_formKey.currentState?.saveAndValidate() ?? false) {
+            await loginController.toMain(data: _formKey.currentState!.value);
+          }
+        },
+        child: Text(I18n.login.tr),
+      ),
+    );
   }
 
   Widget _serverButton() {
     return FloatingActionButton(
-        heroTag: 'SERVER',
-        child: const Icon(Icons.developer_board_rounded),
-        onPressed: () {
-          Get.toNamed('/server');
-        });
+      heroTag: 'SERVER',
+      elevation: 0,
+      backgroundColor: AppColors.panelHi,
+      foregroundColor: AppColors.accent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        side: BorderSide(color: AppColors.border),
+      ),
+      child: const Icon(Icons.developer_board_rounded, size: 18),
+      onPressed: () {
+        Get.toNamed('/server');
+      },
+    );
   }
 }

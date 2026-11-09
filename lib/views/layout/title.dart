@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:styled_widget/styled_widget.dart';
 
-import 'package:oasx/views/nav/view_nav.dart';
+import 'package:oasx/config/design/app_theme.dart';
+import 'package:oasx/controller/ctrl_nav.dart';
 import 'package:oasx/config/translation/i18n_content.dart';
-import 'package:oasx/utils/platform_utils.dart';
 
+/// 标题栏左侧：Logo + OASX + 当前脚本
 Widget getTitle() {
   var routePath = Get.currentRoute;
   return switch (routePath) {
@@ -18,109 +18,150 @@ Widget getTitle() {
 }
 
 class MainTitleBar extends StatelessWidget {
-  const MainTitleBar({
-    Key? key,
-  }) : super(key: key);
+  const MainTitleBar({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    if (!Get.isRegistered<NavCtrl>()) {
+      return const _BaseTitle(text: '');
+    }
     return GetX<NavCtrl>(builder: (controller) {
-      return <Widget>[
-        Image.asset("assets/images/Icon-app.png", height: 30, width: 30),
-        const SizedBox(width: 6),
-        Text(
-            "OASX / ${controller.selectedScript.value.toUpperCase()} /  ${controller.selectedMenu.value.tr}",
-            style: Theme.of(context).textTheme.titleMedium),
-        PlatformUtils.isWindows
-            ? const SizedBox()
-            : const Flexible(child: SizedBox()),
-      ]
-          .toRow(
-            separator: const SizedBox(width: 8),
-            mainAxisAlignment: MainAxisAlignment.start,
-          )
-          .padding(left: 5);
+      final name = controller.selectedScript.value;
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(7),
+            child: Image.asset(
+              'assets/images/Icon-app.png',
+              width: 26,
+              height: 26,
+              fit: BoxFit.cover,
+            ),
+          ),
+          const SizedBox(width: 9),
+          Text(
+            'OASX',
+            style: TextStyle(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+              letterSpacing: 1.0,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Container(width: 1, height: 18, color: AppColors.border),
+          const SizedBox(width: 10),
+          Text(
+            name == 'Home' ? 'Home' : name,
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      );
     });
   }
 }
 
-class LoginTitle extends StatelessWidget {
-  const LoginTitle({
-    Key? key,
-  }) : super(key: key);
+/// 通用标题基座：Logo + 文本
+class _BaseTitle extends StatelessWidget {
+  const _BaseTitle({
+    required this.text,
+    this.showBack = false,
+    this.onBack,
+  });
+
+  final String text;
+  final bool showBack;
+  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) {
-    return <Widget>[
-      Image.asset("assets/images/Icon-app.png", height: 30, width: 30),
-      const SizedBox(width: 6),
-      Text("OASX / ${I18n.login.tr}",
-          style: Theme.of(context).textTheme.titleMedium),
-      PlatformUtils.isWindows
-          ? const SizedBox()
-          : const Flexible(child: SizedBox()),
-    ]
-        .toRow(
-            separator: const SizedBox(width: 8),
-            mainAxisAlignment: MainAxisAlignment.start)
-        .padding(left: 5);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (showBack)
+          IconButton(
+            icon: const Icon(Icons.arrow_back_rounded, size: 16),
+            onPressed: onBack ?? () => Get.offAllNamed(Get.previousRoute),
+          ),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(7),
+          child: Image.asset(
+            'assets/images/Icon-app.png',
+            width: 26,
+            height: 26,
+            fit: BoxFit.cover,
+          ),
+        ),
+        const SizedBox(width: 9),
+        Text(
+          'OASX',
+          style: TextStyle(
+            fontSize: 13.5,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+            letterSpacing: 1.0,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Container(width: 1, height: 18, color: AppColors.border),
+        const SizedBox(width: 10),
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: 12,
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class LoginTitle extends StatelessWidget {
+  const LoginTitle({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return _BaseTitle(text: I18n.login.tr);
   }
 }
 
 class SettingTitle extends StatelessWidget {
-  const SettingTitle({
-    Key? key,
-  }) : super(key: key);
+  const SettingTitle({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    bool backButton = switch (Theme.of(context).platform) {
+    final showBack = switch (Theme.of(context).platform) {
       TargetPlatform.android => false,
       TargetPlatform.iOS => false,
       _ => true,
     };
-    return <Widget>[
-      if (backButton)
-        BackButton(onPressed: () => Get.offAllNamed(Get.previousRoute)),
-      Image.asset("assets/images/Icon-app.png", height: 30, width: 30),
-      const SizedBox(width: 6),
-      Text("OASX / ${I18n.setting.tr}",
-          style: Theme.of(context).textTheme.titleMedium),
-      PlatformUtils.isWindows
-          ? const SizedBox()
-          : const Flexible(child: SizedBox()),
-    ]
-        .toRow(
-            separator: const SizedBox(width: 8),
-            mainAxisAlignment: MainAxisAlignment.start)
-        .padding(left: 5);
+    return _BaseTitle(
+      text: I18n.setting.tr,
+      showBack: showBack,
+      onBack: () => Get.offAllNamed('/main'),
+    );
   }
 }
 
 class ServerTitle extends StatelessWidget {
-  const ServerTitle({
-    Key? key,
-  }) : super(key: key);
+  const ServerTitle({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    bool backButton = switch (Theme.of(context).platform) {
+    final showBack = switch (Theme.of(context).platform) {
       TargetPlatform.android => false,
       TargetPlatform.iOS => false,
       _ => true,
     };
-    return <Widget>[
-      if (backButton) const BackButton(),
-      Image.asset("assets/images/Icon-app.png", height: 30, width: 30),
-      const SizedBox(width: 6),
-      Text("OASX / Server", style: Theme.of(context).textTheme.titleMedium),
-      PlatformUtils.isWindows
-          ? const SizedBox()
-          : const Flexible(child: SizedBox()),
-    ]
-        .toRow(
-            separator: const SizedBox(width: 8),
-            mainAxisAlignment: MainAxisAlignment.start)
-        .padding(left: 5);
+    return _BaseTitle(
+      text: 'Server',
+      showBack: showBack,
+      onBack: () => Get.back(),
+    );
   }
 }
