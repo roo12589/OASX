@@ -2,12 +2,18 @@
 
 part of args;
 
-final dateYears = <String>['2023', '2024', '2025', '2026'];
+/// 年份列表不能硬编码：写死到 2026 会导致 2026 年之后无法选择，
+/// 也会让「置底一年后」这类操作选不到目标年份。
+final List<String> dateYears = () {
+  final nowYear = DateTime.now().year;
+  // 往前 3 年（便于回填历史）、往后 10 年
+  return List.generate(14, (i) => '${nowYear - 3 + i}');
+}();
 final dateMonths = List.generate(
         12, (index) => (index + 1) < 10 ? '0${index + 1}' : '${index + 1}')
     .toList();
-final dateDaysInMonth = List.generate(daysInMonth(),
-    (index) => (index + 1) < 10 ? '0${index + 1}' : '${index + 1}').toList();
+final dateDaysInMonth = List.generate(31,
+        (index) => (index + 1) < 10 ? '0${index + 1}' : '${index + 1}').toList();
 final dateDaysInWeek =
     List.generate(7, (index) => index < 10 ? '0$index' : '$index').toList();
 final dateHours =
@@ -79,34 +85,76 @@ class DateTimePickerBase extends StatefulWidget {
 }
 
 class DateTimePickerBaseState extends State<DateTimePickerBase> {
-  // 占位
-
   // 鼠标是否在这个区域内
   bool _isHover = false;
 
+  /// 控件左侧的图标，由子类按语义覆盖
+  IconData get _icon => Icons.schedule_rounded;
+
   @override
   Widget build(BuildContext context) {
+    final hasValue = widget.value.isNotEmpty;
     return MouseRegion(
-        onEnter: (event) {
-          setState(() {
-            _isHover = true;
-          });
+      cursor: SystemMouseCursors.click,
+      onEnter: (event) {
+        setState(() {
+          _isHover = true;
+        });
+      },
+      onExit: (event) {
+        setState(() {
+          _isHover = false;
+        });
+      },
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          showPicker(context, widget.value);
         },
-        onExit: (event) {
-          setState(() {
-            _isHover = false;
-          });
-        },
-        child: GestureDetector(
-          child: Text(widget.value,
-              style: _isHover
-                  ? TextStyle(
-                      color: Theme.of(context).primaryColor, fontSize: 17)
-                  : const TextStyle(fontSize: 16)),
-          onTap: () {
-            showPicker(context, widget.value);
-          },
-        ));
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          height: 38,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color: _isHover ? AppColors.panelHi : AppColors.panelSoft,
+            borderRadius: AppRadius.chipR,
+            border: Border.all(
+              color: _isHover ? AppColors.borderStrong : AppColors.border,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                _icon,
+                size: 14,
+                color: _isHover ? AppColors.accent : AppColors.textMuted,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  hasValue ? widget.value : '--',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppText.mono.copyWith(
+                    color: hasValue
+                        ? (_isHover
+                            ? AppColors.textPrimary
+                            : AppColors.textSecondary)
+                        : AppColors.textMuted,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Icon(
+                Icons.expand_more_rounded,
+                size: 15,
+                color: AppColors.textMuted,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   // 重写
@@ -135,6 +183,9 @@ class DateTimePicker extends DateTimePickerBase {
 }
 
 class DateTimePickerState extends DateTimePickerBaseState {
+  @override
+  IconData get _icon => Icons.event_note_rounded;
+
   @override
   void showPicker(context, dynamic value) {
     Pickers.showMultiPicker(
@@ -187,6 +238,9 @@ class TimeDeltaPicker extends DateTimePickerBase {
 
 class TimeDeltaPickerState extends DateTimePickerBaseState {
   @override
+  IconData get _icon => Icons.timelapse_rounded;
+
+  @override
   void showPicker(context, dynamic value) {
     Pickers.showMultiPicker(
       context,
@@ -236,6 +290,9 @@ class TimePicker extends DateTimePickerBase {
 }
 
 class TimePickerState extends DateTimePickerBaseState {
+  @override
+  IconData get _icon => Icons.access_time_rounded;
+
   @override
   void showPicker(context, dynamic value) {
     Pickers.showMultiPicker(

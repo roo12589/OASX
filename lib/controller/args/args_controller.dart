@@ -1,15 +1,15 @@
-part of args;
+import 'dart:convert';
 
+import 'package:get/get.dart';
+
+import 'package:oasx/api/api_client.dart';
+import 'package:oasx/controller/ctrl_nav.dart';
+
+/// 参数配置控制器：加载任务的参数分组并回写
 class ArgsController extends GetxController {
   final groups = Rx<List<GroupsModel>>([]);
   final groupsName = Rx<List<String>>([]);
   final groupsData = Rx<Map<String, GroupsModel>>({});
-
-  @override
-  void onInit() {
-    // loadGroups();
-    super.onInit();
-  }
 
   void loadModel(Map<String, dynamic> json) {
     groups.value = [];
@@ -22,20 +22,17 @@ class ArgsController extends GetxController {
     loadModel(jsonDecode(json));
   }
 
-  /// 加载groups数据
+  /// 加载 groups 数据
   Future<void> loadGroups({String config = "", String task = ""}) async {
-    // 清空缓存数据
     groupsName.value = [];
     groupsData.value = {};
-    List<String> groupsNameTemp = [];
+    final groupsNameTemp = <String>[];
 
-    var json = await ApiClient().getScriptTask(config, task);
-    // 更新groupsData
-    // 更新groupsName
-    for (var entry in json.entries) {
+    final json = await ApiClient().getScriptTask(config, task);
+    for (final entry in json.entries) {
       groupsNameTemp.add(entry.key);
-      List<ArgumentModel> arguments = [];
-      for (var argument in entry.value) {
+      final arguments = <ArgumentModel>[];
+      for (final argument in entry.value) {
         arguments.add(ArgumentModel.fromJson(argument));
       }
       groupsData.value[entry.key] =
@@ -45,19 +42,17 @@ class ArgsController extends GetxController {
   }
 
   Future<void> setArgument(String? config, String? task, String? group,
-      String argument, String type, var value) async {
-    if (config == null || task == null || group == null) {
-      return;
-    }
+      String argument, String type, dynamic value) async {
+    if (config == null || task == null || group == null) return;
     if (config.isEmpty || task.isEmpty || group.isEmpty) {
-      NavCtrl navCtrl = Get.find();
+      final NavCtrl navCtrl = Get.find<NavCtrl>();
       config = navCtrl.selectedScript.value;
       task = navCtrl.selectedMenu.value;
     }
     await ApiClient().putScriptArg(config, task, group, argument, type, value);
     printInfo(
         info:
-            "setArgument config: $config, task: $task, group: $group, argument: $argument, value: $value");
+            'setArgument config: $config, task: $task, group: $group, argument: $argument, value: $value');
   }
 }
 
@@ -65,7 +60,6 @@ class GroupsModel {
   final String groupName;
   List<dynamic> members;
 
-  /// 把 json对象转化为 model
   GroupsModel({required this.groupName, required this.members});
 
   String getGroupName() => groupName;
@@ -75,9 +69,7 @@ class ArgumentModel {
   final String title;
   dynamic value;
   final String type;
-
   final String? description;
-
   final List<String>? enumEnum;
   final dynamic minimum;
   final dynamic maximum;
@@ -96,14 +88,15 @@ class ArgumentModel {
 
   factory ArgumentModel.fromJson(Map<String, dynamic> json) {
     return ArgumentModel(
-        List<String>.from(json["enumEnum"]?.map((x) => x) ?? []),
-        json['minimum'],
-        json['maximum'],
-        json['defaultValue'],
-        json['description'],
-        title: json['name'] as String,
-        value: json['value'],
-        type: json['type'] as String);
+      List<String>.from(json["enumEnum"]?.map((x) => x) ?? []),
+      json['minimum'],
+      json['maximum'],
+      json['defaultValue'],
+      json['description'],
+      title: json['name'] as String,
+      value: json['value'],
+      type: json['type'] as String,
+    );
   }
 
   set setValue(dynamic newValue) => value = newValue;

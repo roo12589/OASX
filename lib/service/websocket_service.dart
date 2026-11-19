@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:get/get.dart';
 import 'package:oasx/api/api_client.dart';
+import 'package:oasx/utils/error_reporter.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 typedef MessageListener = void Function(dynamic message);
@@ -193,16 +194,20 @@ class WebSocketClient {
         onError: (e) {
           printError(info: "ws[$name] error: $e");
           status.value = WsStatus.error;
+          // WebSocket 断开是「异常」里最常见的一种，交给统一上报
+          ErrorReporter.report(e, source: 'ws', title: 'OASX');
           _reconnect();
         },
       );
     } on SocketException {
       printError(info: "ws[$name] SocketException: $url");
       status.value = WsStatus.error;
+      ErrorReporter.report('ws[$name] SocketException: $url', source: 'ws');
       _reconnect();
     } on Exception catch (e) {
       printError(info: "ws[$name] Exception: $e");
       status.value = WsStatus.error;
+      ErrorReporter.report(e, source: 'ws');
       _reconnect();
     }
   }
