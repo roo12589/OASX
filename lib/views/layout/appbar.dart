@@ -47,33 +47,81 @@ PreferredSizeWidget _windowAppbar(BuildContext context, {bool? isCollapsed}) {
               ),
             ),
           Expanded(
-            child: DragToMoveArea(
-              child: Row(
-                children: [
-                  // 左侧固定宽度标题区，避免被标签挤走
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 300),
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 6),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: getTitle(),
-                      ),
+            child: Row(
+              children: [
+                // 可拖拽区只包「标题 + 标签栏」。
+                // DragToMoveArea 内部有 onDoubleTap（双击最大化/还原），
+                // 手势竞技场里一旦存在双击识别器，子级的单击都要等
+                // 双击超时（约 300ms）才触发 —— 把按钮留在里面会让
+                // 更新器 / 工具 / 主题 / 设置点下去有半秒延迟、像没反应。
+                Expanded(
+                  child: DragToMoveArea(
+                    child: Row(
+                      children: [
+                        // 左侧固定宽度标题区，避免被标签挤走
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 300),
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 6),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: getTitle(),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        // 标签区自适应剩余空间，可横向滚动
+                        const Expanded(child: ScriptTabBar()),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  // 标签区自适应剩余空间，可横向滚动
-                  const Expanded(child: ScriptTabBar()),
-                  const SizedBox(width: 6),
-                  const _CaptionActions(),
-                ],
-              ),
+                ),
+                // 按钮区在拖拽区之外：单击立即响应
+                const SizedBox(width: 6),
+                const _CaptionActions(),
+              ],
             ),
           ),
         ],
       ),
     ),
   );
+}
+
+/// 首页固定页面入口按钮（更新器 / 工具）
+///
+/// 只切到首页对应子页，不影响当前脚本标签，避免用户在脚本页误触后
+/// 找不回原来的脚本。
+class _HomeEntryActions extends StatelessWidget {
+  const _HomeEntryActions();
+
+  @override
+  Widget build(BuildContext context) {
+    return GetX<NavCtrl>(builder: (controller) {
+      final isHome = controller.isHomeScript;
+      final menu = controller.selectedMenu.value;
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AppIconButton(
+            icon: const Icon(Icons.system_update_alt_rounded),
+            size: 28,
+            selected: isHome && menu == 'Updater',
+            tooltip: I18n.updater.tr,
+            onPressed: () => controller.openHomePage('Updater'),
+          ),
+          const SizedBox(width: 2),
+          AppIconButton(
+            icon: const Icon(Icons.handyman_outlined),
+            size: 28,
+            selected: isHome && menu == 'Tool',
+            tooltip: I18n.tool.tr,
+            onPressed: () => controller.openHomePage('Tool'),
+          ),
+        ],
+      );
+    });
+  }
 }
 
 /// 右侧窗口操作按钮
@@ -85,8 +133,11 @@ class _CaptionActions extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // 「更多」：收纳添加配置 / 排序 / 隐藏任务
+        // 首页固定入口：更新器 / 工具（重做 UI 时被弄丢的两个页面）
         if (Get.currentRoute == '/main' && Get.isRegistered<NavCtrl>()) ...[
+          const _HomeEntryActions(),
+          const SizedBox(width: 6),
+          // 「更多」：收纳添加配置 / 排序 / 隐藏任务
           const ScriptToolsButton(),
           const SizedBox(width: 2),
         ],

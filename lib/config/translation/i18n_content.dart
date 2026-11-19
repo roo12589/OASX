@@ -301,4 +301,37 @@ class I18n {
   // ---------------------------------- 主题 ----------------------------------
   static const String theme_light = 'Light';
   static const String theme_dark = 'Dark';
+
+  // ---------------------------------- 系统通知 ----------------------------------
+  static const String system_notify = 'System notify';
+  static const String system_notify_help =
+      'Show a native system notification when something goes wrong';
+  static const String system_notify_unsupported = 'Not supported';
+  static const String system_notify_unsupported_help =
+      'Native notification is not available on this platform';
+  static const String system_notify_test = 'Send test';
+  static const String system_notify_test_content =
+      'This is a test notification from OASX';
+  static const String system_notify_test_success = 'Test notification sent';
+  static const String system_notify_test_failed = 'Failed to send notification';
+  static const String system_notify_report_error_test = 'Simulate error';
+  static const String system_notify_report_sent = 'Error notification sent';
+  static const String system_notify_report_off =
+      'System notify is off, nothing sent';
+  static const String system_notify_sample_error =
+      'Simulated error: used to verify the system notification switch';
+  static const String system_notify_error_title = 'OASX error';
+
+  // ---------------------------------- 日志 ----------------------------------
+  static const String history_log = 'History';
+  static const String no_history = 'No persisted log yet';
+  static const String log_all = 'All';
+  static const String log_search_hint = 'Filter text';
+  static const String log_reload = 'Reload';
+  static const String log_lines = 'Lines';
+  static const String log_errors = 'Errors';
+  static const String log_warnings = 'Warnings';
+  static const String log_error_rate = 'Error rate';
+  static const String auto_scroll = 'Auto scroll';
+  static const String copy_log = 'Copy log';
 }

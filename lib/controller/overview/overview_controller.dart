@@ -17,6 +17,10 @@ class OverviewController extends GetxController with LogMixin {
   final scriptService = Get.find<ScriptService>();
   late final scriptModel = scriptService.findScriptModel(name)!;
 
+  /// 日志按脚本（配置名）分目录存储，避免多个配置的日志混在一起
+  @override
+  String get logStoreName => name.isEmpty ? 'default' : name;
+
   /// 是否显示全部任务
   final showAll = false.obs;
 

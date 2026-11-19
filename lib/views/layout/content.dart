@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:oasx/config/design/app_theme.dart';
-import 'package:oasx/controller/ctrl_nav.dart';
 import 'package:oasx/config/translation/i18n_content.dart';
+import 'package:oasx/controller/ctrl_nav.dart';
 import 'package:oasx/views/args/args_view.dart';
 import 'package:oasx/views/common/app_widgets.dart';
+import 'package:oasx/views/home/home_sub_nav.dart';
 import 'package:oasx/views/home/home_view.dart';
 import 'package:oasx/views/home/tool_view.dart';
 import 'package:oasx/views/home/updater_view.dart';
@@ -17,13 +18,11 @@ Widget content() {
     final script = controller.selectedScript.value;
     final menu = controller.selectedMenu.value;
 
+    // 首页：固定子页（主页 / 更新器 / 工具）切换条 + 对应页面。
+    // 子页切换条放这里而不是只放抽屉里，是为了保证首页的三个入口
+    // 在桌面端和移动端都能一眼看到。
     if (script == 'Home') {
-      return switch (menu) {
-        'Updater' => const _PageFrame(
-            titleKey: I18n.updater, child: UpdaterView()),
-        'Tool' => const _PageFrame(titleKey: I18n.tool, child: ToolView()),
-        _ => const HomeView(),
-      };
+      return _HomePageFrame(menu: menu, child: _homeChild(menu));
     }
     if (menu == 'Overview') {
       // 注意：不要写成 `const Overview()`。
@@ -38,6 +37,72 @@ Widget content() {
       task: menu,
     );
   });
+}
+
+Widget _homeChild(String menu) {
+  return switch (menu) {
+    'Updater' => const UpdaterView(),
+    'Tool' => const ToolView(),
+    _ => const HomeView(),
+  };
+}
+
+/// 首页外框：子页切换条 + 带标题的内容面板
+class _HomePageFrame extends StatelessWidget {
+  const _HomePageFrame({required this.menu, required this.child});
+
+  final String menu;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+          AppMetrics.pagePadding,
+          0,
+          AppMetrics.pagePadding,
+          AppMetrics.pagePadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const HomeSubNav(),
+          Expanded(
+            child: AppPanel(
+              padding: EdgeInsets.zero,
+              clip: true,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  AppSectionHeader(
+                    title: Text(_title(menu).tr),
+                    actions: [
+                      Icon(_icon(menu),
+                          size: 15, color: AppColors.textMuted),
+                    ],
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+                  ),
+                  const AppDivider(),
+                  Expanded(child: child),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _title(String menu) => switch (menu) {
+        'Updater' => I18n.updater,
+        'Tool' => I18n.tool,
+        _ => I18n.home,
+      };
+
+  static IconData _icon(String menu) => switch (menu) {
+        'Updater' => Icons.system_update_alt_rounded,
+        'Tool' => Icons.handyman_outlined,
+        _ => Icons.home_rounded,
+      };
 }
 
 /// 参数配置页外框：面包屑 + 返回总览
@@ -75,7 +140,7 @@ class _TaskArgsPage extends StatelessWidget {
                 Text(script,
                     style: AppText.label.copyWith(color: AppColors.textMuted)),
                 Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
                   child: Icon(Icons.chevron_right_rounded,
                       size: 14, color: AppColors.textMuted),
                 ),
@@ -83,48 +148,14 @@ class _TaskArgsPage extends StatelessWidget {
               ],
             ),
           ),
-          Expanded(
+          const Expanded(
             child: AppPanel(
               padding: EdgeInsets.zero,
               clip: true,
-              child: const Args(),
+              child: Args(),
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// 简单的带标题页框
-class _PageFrame extends StatelessWidget {
-  const _PageFrame({required this.titleKey, required this.child});
-
-  final String titleKey;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-          AppMetrics.pagePadding,
-          0,
-          AppMetrics.pagePadding,
-          AppMetrics.pagePadding),
-      child: AppPanel(
-        padding: EdgeInsets.zero,
-        clip: true,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            AppSectionHeader(
-              title: Text(titleKey.tr),
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-            ),
-            const AppDivider(),
-            Expanded(child: child),
-          ],
-        ),
       ),
     );
   }

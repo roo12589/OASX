@@ -7,10 +7,12 @@ import 'package:responsive_builder/responsive_builder.dart';
 import 'package:get/get.dart';
 
 import 'package:oasx/service/locale_service.dart';
+import 'package:oasx/service/notification_service.dart';
 import 'package:oasx/service/theme_service.dart';
 import 'package:oasx/service/ui_prefs_service.dart';
 import 'package:oasx/service/websocket_service.dart';
 import 'package:oasx/service/window_service.dart';
+import 'package:oasx/utils/error_reporter.dart';
 import 'package:oasx/utils/logger.dart';
 import 'package:oasx/utils/platform_utils.dart';
 import 'package:oasx/views/routes.dart';
@@ -23,6 +25,10 @@ const bool kDevicePreviewEnabled = false;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // 先把全局异常接到统一上报（此时 logger / 通知服务可能还没就绪，
+  // ErrorReporter 内部做了保护，等价于「先装上钩子，后补能力」）。
+  ErrorReporter.installPlatformErrorHandler();
+  ErrorReporter.installFlutterErrorHandler();
   await initService();
 
   if (kDevicePreviewEnabled && !kReleaseMode && PlatformUtils.isWindows) {
@@ -99,6 +105,8 @@ Future<void> initService() async {
     Get.putAsync(() async => ThemeService()),
     Get.putAsync(() async => WindowService()),
     Get.putAsync(() async => UiPrefsService()),
+    // 系统通知：异常时按开关弹原生通知，工具页可开关 / 测试
+    Get.putAsync(() async => NotificationService()),
   ]);
 
   Get.lazyPut(() => WebSocketService());

@@ -13,4 +13,7 @@ enum StorageKey {
 
   /// 是否显示资产（资源检测）面板
   showAssetsPanel,
+
+  /// 系统通知总开关（bool，默认 false，见 NotificationService）
+  systemNotify,
 }

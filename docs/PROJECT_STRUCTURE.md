@@ -235,3 +235,89 @@ OAS 后端 (127.0.0.1:22288)
 - ✅ 中栏下：日志面板（日志/运行日志/错误日志/任务统计 四 Tab + 右上操作图标 + 展开/收起）
 - ✅ 右栏：资产 2 列网格 + 底部「18 项 · 每日 23:55 自动读取」
 - ➖ 中栏横幅用程序化光晕替代角色立绘（不打包游戏资源）
+
+---
+
+## 八、首页入口与系统通知（本轮修复）
+
+### 8.1 恢复被弄丢的「更新器 / 工具」入口
+
+重做暗色 UI 时，`Home` 只剩 README 渲染：`UpdaterView` / `ToolView` 文件还在，
+但**没有任何入口能到达**。本轮补回三处入口，并加测试防回归：
+
+| 位置 | 组件 | 说明 |
+| --- | --- | --- |
+| 内容区顶部 | `lib/views/home/home_sub_nav.dart` → `HomeSubNav` | 首页固定三段切换条：主页 / 更新器 / 工具 |
+| 标题栏右侧 | `lib/views/layout/appbar.dart` → `_HomeEntryActions` | 两个图标按钮，任意页面一键跳到更新器 / 工具 |
+| 标签栏最左 | `lib/views/layout/script_tab_bar.dart` | 固定「主页」标签，不参与排序 / 显隐 |
+
+菜单逻辑抽成纯函数 `lib/controller/home_menu.dart`：
+
+- `kHomeMenuOrder` = `['Home', 'Updater', 'Tool']`，**永远排在最前且不重复**；
+  即使服务端 `home_menu` 少返回一项，入口也不会再丢。
+- `buildHomeMenus()` / `isHomeMenuPage()` 均为纯函数，见 `test/home_menu_test.dart`。
+- `NavCtrl.openHomePage(menu)`：先切到 Home 脚本再切子页；`selectScript('Home')`
+  默认落在「主页」（原来落在不存在的 `Overview`，导致二级菜单一个都不高亮）。
+
+> 排查中发现的实际缺陷：`DragToMoveArea`（window_manager）带 `onDoubleTap`，
+> 手势竞技场里一旦存在双击识别器，**子级所有单击都要等约 300ms 双击超时才触发**。
+> 原来整条标题栏（含右侧按钮）都包在拖拽区里，按钮点下去像没反应。
+> 现在拖拽区只包「标题 + 标签栏」，按钮区在拖拽区之外，单击即时生效
+> （`test/appbar_entry_test.dart` 有专门用例锁定）。
+
+### 8.2 系统通知（异常时弹原生通知）
+
+| 文件 | 作用 |
+| --- | --- |
+| `lib/service/notification_service.dart` | `NotificationService`：开关、测试发送、异常上报（带节流）+ 原生投放双层实现 |
+| `lib/utils/error_reporter.dart` | `ErrorReporter`：全局异常统一入口（日志 + 系统通知） |
+| `lib/views/home/tool_view.dart` | 工具页「系统通知」分区：开关 + 发送测试 + 模拟异常上报 |
+| `lib/model/const/storage_key.dart` | 新增 `StorageKey.systemNotify` |
+
+**开关**：工具页 → 系统通知，默认**关闭**，持久化在 get_storage 的 `systemNotify`。
+
+**投放通道（两层 + 静默降级，全部 try/catch，绝不影响主流程）**
+
+1. `local_notifier` 插件（Windows WinToast / macOS UNUserNotificationCenter / Linux libnotify）；
+2. 插件不可用时回退到零依赖实现：Windows = PowerShell + WinRT `ToastNotificationManager`
+   （AUMID 运行时写 `HKCU\Software\Classes\AppUserModelId`，免管理员权限）；
+   macOS = `osascript`；Linux = `notify-send`。
+
+> 实测：Windows PowerShell 5.1 可用；**PowerShell 7 无法解析旧式 WinRT 类型语法**
+> （`[Windows.UI.Notifications.ToastNotificationManager, ..., ContentType=WindowsRuntime]`），
+> 所以候选顺序必须是 `powershell.exe (5.1)` → `powershell.exe` → `pwsh.exe`。
+> 全量自检：`$env:OASX_REAL_TOAST=1; flutter test test/manual_real_toast_test.dart`
+> → `REAL_TOAST_OK=true channel=windows-toast`。
+
+**异常挂钩点**
+
+| 位置 | 触发条件 |
+| --- | --- |
+| `lib/api/api_client.dart` | 任意 HTTP 请求抛异常 |
+| `lib/service/websocket_service.dart` | WS 连接错误 / SocketException / onError |
+| `lib/component/log/log_mixin.dart` | 脚本日志里出现 `ERROR` / `CRITICAL` |
+| `lib/main.dart` | `FlutterError.onError` + `PlatformDispatcher.onError`（全局兜底） |
+
+节流：5 秒内最多 1 条，相同文本 60 秒内不重复（进程内状态，重启清零）。
+
+### 8.3 本轮新增测试
+
+| 文件 | 覆盖 |
+| --- | --- |
+| `test/home_menu_test.dart` | 首页固定菜单在最前、不重复、空项忽略、兜底菜单 |
+| `test/nav_home_entry_test.dart` | `selectScript('Home')` 默认子页、`switchContent`、`openHomePage` |
+| `test/home_sub_nav_test.dart` | 子页切换条渲染与点击切换 |
+| `test/appbar_entry_test.dart` | 标题栏窄宽不溢出、四个入口都在、单击不能被双击识别器拖慢 |
+| `test/tool_view_test.dart` | 工具页开关读写、未注册服务时降级、原有推送测试区块保留 |
+| `test/error_reporter_test.dart` | 开关打开/关闭/未注册时异常上报行为、标题透传 |
+| `test/notification_service_test.dart` | 开关持久化、节流去重、XML/AppleScript 转义、UTF-16LE 编码、全局入口 |
+| `test/tool_view_golden_test.dart` | 工具页暗色视觉快照 `test/goldens/tool_view_dark.png` |
+
+验证命令：
+
+```powershell
+& 'D:\develop\flutter\bin\flutter.bat' analyze lib    # 0 error（10 条既有 warning/info）
+& 'D:\develop\flutter\bin\flutter.bat' test           # 150 passed, 2 skipped（手动 toast 自检）
+& 'D:\develop\flutter\bin\flutter.bat' build windows --debug
+```
+

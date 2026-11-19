@@ -85,6 +85,33 @@ final Map<String, String> _us_ui = {
   I18n.assets_hidden_tip: 'Assets panel is hidden. Enable it in settings.',
   I18n.theme_light: 'Light',
   I18n.theme_dark: 'Dark',
+  I18n.history_log: 'History',
+  I18n.no_history: 'No persisted log yet',
+  I18n.log_all: 'All',
+  I18n.log_search_hint: 'Filter text',
+  I18n.log_reload: 'Reload',
+  I18n.log_lines: 'Lines',
+  I18n.log_errors: 'Errors',
+  I18n.log_warnings: 'Warnings',
+  I18n.log_error_rate: 'Error rate',
+  I18n.auto_scroll: 'Auto scroll',
+  I18n.copy_log: 'Copy log',
+  I18n.system_notify: 'System notify',
+  I18n.system_notify_help:
+      'Show a native system notification when something goes wrong',
+  I18n.system_notify_unsupported: 'Not supported',
+  I18n.system_notify_unsupported_help:
+      'Native notification is not available on this platform',
+  I18n.system_notify_test: 'Send test',
+  I18n.system_notify_test_content: 'This is a test notification from OASX',
+  I18n.system_notify_test_success: 'Test notification sent',
+  I18n.system_notify_test_failed: 'Failed to send notification',
+  I18n.system_notify_report_error_test: 'Simulate error',
+  I18n.system_notify_report_sent: 'Error notification sent',
+  I18n.system_notify_report_off: 'System notify is off, nothing sent',
+  I18n.system_notify_sample_error:
+      'Simulated error: used to verify the system notification switch',
+  I18n.system_notify_error_title: 'OASX error',
 };
 
 final Map<String, String> _us_script = {

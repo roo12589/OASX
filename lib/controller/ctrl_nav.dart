@@ -4,6 +4,7 @@ import 'package:get_storage/get_storage.dart';
 
 import 'package:oasx/api/api_client.dart';
 import 'package:oasx/controller/args/args_controller.dart';
+import 'package:oasx/controller/home_menu.dart';
 import 'package:oasx/controller/nav_tab_order.dart';
 import 'package:oasx/controller/overview/overview_controller.dart';
 import 'package:oasx/model/const/storage_key.dart';
@@ -30,11 +31,7 @@ class NavCtrl extends GetxController {
   final hiddenTabs = <String>{}.obs;
 
   /// 首页菜单
-  var homeMenuJson = <String, List<String>>{
-    'Home': [],
-    'Updater': [],
-    'Tool': [],
-  }.obs;
+  var homeMenuJson = Map<String, List<String>>.from(kDefaultHomeMenu).obs;
 
   /// 脚本菜单
   var scriptMenuJson = <String, List<String>>{}.obs;
@@ -79,7 +76,8 @@ class NavCtrl extends GetxController {
   // ----------------------------- 标签顺序 / 显隐 -----------------------------
 
   void _loadTabPreferences() {
-    final savedOrder = _storage.read<List>(StorageKey.tabOrder.name) ?? const [];
+    final savedOrder =
+        _storage.read<List>(StorageKey.tabOrder.name) ?? const [];
     final savedHidden =
         _storage.read<List>(StorageKey.hiddenTabs.name) ?? const [];
 
@@ -144,6 +142,21 @@ class NavCtrl extends GetxController {
     _persistTabPreferences();
   }
 
+  /// 拖拽重排（索引基于**全部标签**，含隐藏项）
+  ///
+  /// 与 [reorderTabs] 的区别：排序面板列出全部配置，行索引直接对应
+  /// [tabOrder]，隐藏项也参与拖拽，因此走 [reorderAllTabOrder]。
+  void reorderAllTabs(int oldIndex, int newIndex) {
+    final next = reorderAllTabOrder(
+      order: tabOrder.toList(),
+      oldIndex: oldIndex,
+      newIndex: newIndex,
+    );
+    if (listEquals(next, tabOrder.toList())) return;
+    tabOrder.value = next;
+    _persistTabPreferences();
+  }
+
   /// 左右移动一格
   void moveTab(String name, int delta) {
     tabOrder.value = moveVisibleTab(
@@ -163,7 +176,8 @@ class NavCtrl extends GetxController {
     if (name != 'Home' && !navNameList.contains(name)) return;
 
     selectedScript.value = name;
-    selectedMenu.value = 'Overview';
+    // 脚本默认落在总览；首页默认落在「主页」，否则二级菜单一个都不高亮
+    selectedMenu.value = name == 'Home' ? 'Home' : 'Overview';
 
     if (name != 'Home') {
       ensureOverviewController(name);
@@ -199,13 +213,12 @@ class NavCtrl extends GetxController {
   }
 
   /// 当前脚本的二级菜单（任务名）
+  ///
+  /// 首页固定有「主页 / 更新器 / 工具」三个页面（见 [buildHomeMenus]），
+  /// 即便服务端下发的 home_menu 少了一项，入口也不会再丢。
   List<String> get currentTaskMenus {
     if (isHomeScript) {
-      final result = <String>[];
-      homeMenuJson.forEach((key, value) {
-        result.addAll(value.isNotEmpty ? value : [key]);
-      });
-      return result;
+      return buildHomeMenus(homeMenuJson);
     }
     final result = <String>['Overview'];
     scriptMenuJson.forEach((key, value) {
@@ -220,6 +233,17 @@ class NavCtrl extends GetxController {
   /// 回到总览
   void backToOverview() => switchContent('Overview');
 
+  /// 跳到首页的固定子页（主页 / 更新器 / 工具）
+  ///
+  /// 顶栏的「更新器 / 工具」入口走这里：先切到 Home 脚本，再切子页。
+  Future<void> openHomePage(String menu) async {
+    if (!kHomeMenuOrder.contains(menu)) return;
+    if (selectedScript.value != 'Home') {
+      await selectScript('Home');
+    }
+    switchContent(menu);
+  }
+
   void switchContent(String menu) {
     if (!useablemenus.contains(menu)) {
       if (kDebugMode) printInfo(info: 'menu not in useablemenus: $menu');
@@ -227,6 +251,7 @@ class NavCtrl extends GetxController {
     }
     selectedMenu.value = menu;
 
+    // 首页三个固定页面与总览都没有参数页，直接返回
     if (['Home', 'Overview', 'Updater', 'Tool'].contains(menu)) return;
     if (isHomeScript) return;
 
@@ -277,8 +302,7 @@ class NavCtrl extends GetxController {
 
     navNameList[idx] = newName;
     // 顺序与隐藏状态跟着改名
-    tabOrder.value =
-        tabOrder.map((e) => e == oldName ? newName : e).toList();
+    tabOrder.value = tabOrder.map((e) => e == oldName ? newName : e).toList();
     if (hiddenTabs.remove(oldName)) hiddenTabs.add(newName);
     _persistTabPreferences();
 

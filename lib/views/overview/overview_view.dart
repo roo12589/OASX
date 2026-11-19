@@ -180,16 +180,31 @@ class _CenterColumn extends StatelessWidget {
       ),
     );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        banner,
-        const SizedBox(height: AppMetrics.gap),
-        if (fixedLogHeight != null)
-          SizedBox(height: fixedLogHeight, child: logPanel)
-        else
-          Expanded(child: logPanel),
-      ],
-    );
+    // 折叠时日志面板只占标题栏高度，让上方横幅可以撑开；
+    // 展开时占满剩余空间。折叠逻辑放在这里，而不是面板内部，
+    // 否则外层 Expanded 仍会把高度撑满（折叠看起来"没反应"）。
+    return Obx(() {
+      final collapsed = controller.collapseLog.value;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // 折叠时让横幅吃掉剩余空间，避免中间留一大块空白
+          if (collapsed) Expanded(child: banner) else banner,
+          const SizedBox(height: AppMetrics.gap),
+          if (fixedLogHeight != null)
+            SizedBox(
+              height: collapsed ? kLogHeaderHeight : fixedLogHeight,
+              child: logPanel,
+            )
+          else if (collapsed)
+            SizedBox(height: kLogHeaderHeight, child: logPanel)
+          else
+            Expanded(child: logPanel),
+        ],
+      );
+    });
   }
 }
+
+/// 日志面板折叠时保留的高度（标题栏 + 内边距）
+const double kLogHeaderHeight = 62;

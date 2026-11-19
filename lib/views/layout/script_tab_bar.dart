@@ -11,8 +11,9 @@ import 'package:oasx/views/common/app_widgets.dart';
 
 /// 顶部脚本标签栏。
 ///
-/// 默认**不可拖拽排序**（避免误拖）。添加配置、排序、隐藏任务统一收进
-/// 主题按钮左侧的「更多」菜单（[ScriptToolsButton]）。
+/// 默认**不可拖拽排序**（避免误拖）。添加配置、排序 / 显隐统一收进
+/// 主题按钮左侧的「更多」菜单（[ScriptToolsButton]），其中排序面板
+/// 同时负责显隐与拖拽重排。
 /// 标签本身仍支持右键菜单（打开 / 隐藏 / 左移 / 右移）。
 class ScriptTabBar extends StatelessWidget {
   const ScriptTabBar({super.key});
@@ -31,7 +32,29 @@ class ScriptTabBar extends StatelessWidget {
           child: Text(I18n.no_visible_tab.tr, style: AppText.caption),
         );
       }
-      return ListView.separated(
+      return Row(
+        children: [
+          // 固定的「首页」入口：放在标签列表左侧且不参与排序 / 显隐，
+          // 避免所有配置标签把 Home 挤到视野外后回不了首页
+          //（更新器 / 工具页都挂在首页下）。
+          Obx(
+            () => ScriptTabChip(
+              name: 'Home',
+              label: I18n.home.tr,
+              showPower: false,
+              selected: controller.selectedScript.value == 'Home',
+              onTap: () => controller.selectScript('Home'),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(child: _tabs(controller, visible)),
+        ],
+      );
+    });
+  }
+
+  Widget _tabs(NavCtrl controller, List<String> visible) {
+    return ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: EdgeInsets.zero,
         itemCount: visible.length,
@@ -51,11 +74,10 @@ class ScriptTabBar extends StatelessWidget {
           );
         },
       );
-    });
   }
 }
 
-/// 主题按钮左侧的「更多」按钮：添加配置 / 排序 / 隐藏任务
+/// 主题按钮左侧的「更多」按钮：添加配置 / 排序（含显隐）/ 全部显示
 class ScriptToolsButton extends StatelessWidget {
   const ScriptToolsButton({super.key, this.size = 28});
 
@@ -87,12 +109,6 @@ class ScriptToolsButton extends StatelessWidget {
             value: 'order',
             height: 34,
             child: _menuRow(Icons.swap_vert_rounded, I18n.reorder_tabs.tr),
-          ),
-          PopupMenuItem<String>(
-            value: 'hide',
-            height: 34,
-            child: _menuRow(
-                Icons.visibility_off_outlined, I18n.hide_tasks.tr),
           ),
           PopupMenuItem<String>(
             value: 'show_all',
@@ -129,8 +145,6 @@ class ScriptToolsButton extends StatelessWidget {
         await showAddConfigDialog(context);
       case 'order':
         await showTabOrderSheet(context, controller);
-      case 'hide':
-        await showHideTasksSheet(context, controller);
       case 'show_all':
         controller.showAllTabs();
     }
@@ -197,14 +211,14 @@ Future<void> showAddConfigDialog(BuildContext context) async {
   );
 }
 
-/// 排序面板：上下移动调整标签顺序（不做拖拽，避免误触）
-Future<void> showTabOrderSheet(
-    BuildContext context, NavCtrl controller) async {
+/// 排序 / 显隐面板：列出**全部**配置（含隐藏项，隐藏项置灰），
+/// 支持整行拖拽排序，每行右侧一个显隐切换按钮。
+Future<void> showTabOrderSheet(BuildContext context, NavCtrl controller) async {
   await showModalBottomSheet<void>(
     context: context,
     backgroundColor: Colors.transparent,
     barrierColor: Colors.black45,
-    builder: (_) => Padding(
+    builder: (sheetContext) => Padding(
       padding: const EdgeInsets.all(12),
       child: AppPanel(
         padding: EdgeInsets.zero,
@@ -222,110 +236,6 @@ Future<void> showTabOrderSheet(
                   const SizedBox(width: 8),
                   Text(I18n.reorder_tabs.tr, style: AppText.sectionTitle),
                   const Spacer(),
-                  AppIconButton(
-                    icon: const Icon(Icons.close_rounded, size: 16),
-                    size: 26,
-                    onPressed: () => Navigator.of(context).maybePop(),
-                  ),
-                ],
-              ),
-            ),
-            const AppDivider(),
-            Flexible(
-              child: Obx(() {
-                final visible = controller.visibleConfigTabs;
-                return ListView.separated(
-                  shrinkWrap: true,
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  itemCount: visible.length,
-                  separatorBuilder: (_, __) => const AppDivider(indent: 12),
-                  itemBuilder: (context, i) {
-                    final name = visible[i];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Row(
-                        children: [
-                          SizedBox(
-                            width: 22,
-                            child: Text('${i + 1}',
-                                style: AppText.caption.copyWith(
-                                    fontFeatures: const [
-                                      FontFeature.tabularFigures()
-                                    ])),
-                          ),
-                          Expanded(
-                            child: Text(
-                              name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppText.body,
-                            ),
-                          ),
-                          AppIconButton(
-                            icon: const Icon(Icons.keyboard_arrow_up_rounded,
-                                size: 16),
-                            size: 26,
-                            tooltip: I18n.move_up.tr,
-                            onPressed: i == 0
-                                ? null
-                                : () => controller.moveTab(name, -1),
-                          ),
-                          AppIconButton(
-                            icon: const Icon(Icons.keyboard_arrow_down_rounded,
-                                size: 16),
-                            size: 26,
-                            tooltip: I18n.move_down.tr,
-                            onPressed: i == visible.length - 1
-                                ? null
-                                : () => controller.moveTab(name, 1),
-                          ),
-                          AppIconButton(
-                            icon: const Icon(Icons.visibility_off_outlined,
-                                size: 14),
-                            size: 26,
-                            tooltip: I18n.hide_tab.tr,
-                            onPressed: () => controller.hideTab(name),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                );
-              }),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    ),
-  );
-}
-
-/// 隐藏任务（配置标签）面板
-Future<void> showHideTasksSheet(
-    BuildContext context, NavCtrl controller) async {
-  await showModalBottomSheet<void>(
-    context: context,
-    backgroundColor: Colors.transparent,
-    barrierColor: Colors.black45,
-    builder: (_) => Padding(
-      padding: const EdgeInsets.all(12),
-      child: AppPanel(
-        padding: EdgeInsets.zero,
-        clip: true,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 10, 10),
-              child: Row(
-                children: [
-                  Icon(Icons.visibility_off_outlined,
-                      size: 16, color: AppColors.accent),
-                  const SizedBox(width: 8),
-                  Text(I18n.hide_tasks.tr, style: AppText.sectionTitle),
-                  const Spacer(),
                   Obx(
                     () => controller.hasHiddenTabs
                         ? TextButton(
@@ -337,7 +247,7 @@ Future<void> showHideTasksSheet(
                   AppIconButton(
                     icon: const Icon(Icons.close_rounded, size: 16),
                     size: 26,
-                    onPressed: () => Navigator.of(context).maybePop(),
+                    onPressed: () => Navigator.of(sheetContext).maybePop(),
                   ),
                 ],
               ),
@@ -345,9 +255,9 @@ Future<void> showHideTasksSheet(
             const AppDivider(),
             Flexible(
               child: Obx(() {
-                final all = controller.tabOrder
-                    .where((e) => controller.configNames.contains(e))
-                    .toList();
+                // 面板行索引必须与完整 tabOrder 一一对应，
+                // 拖拽回调才能直接交给 reorderAllTabs。
+                final all = controller.tabOrder.toList();
                 if (all.isEmpty) {
                   return Padding(
                     padding: const EdgeInsets.all(20),
@@ -356,46 +266,102 @@ Future<void> showHideTasksSheet(
                     ),
                   );
                 }
-                return ListView.separated(
+                return ReorderableListView.builder(
                   shrinkWrap: true,
                   padding: const EdgeInsets.symmetric(vertical: 6),
+                  buildDefaultDragHandles: false,
                   itemCount: all.length,
-                  separatorBuilder: (_, __) => const AppDivider(indent: 12),
+                  onReorder: controller.reorderAllTabs,
+                  proxyDecorator: (child, index, animation) => Material(
+                    color: AppColors.panelHi,
+                    elevation: 6,
+                    borderRadius: BorderRadius.circular(9),
+                    child: child,
+                  ),
                   itemBuilder: (context, i) {
                     final name = all[i];
                     final hidden = controller.hiddenTabs.contains(name);
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Row(
-                        children: [
-                          Icon(
-                            hidden
-                                ? Icons.visibility_off_outlined
-                                : Icons.visibility_outlined,
-                            size: 14,
-                            color: hidden
-                                ? AppColors.textMuted
-                                : AppColors.textSecondary,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppText.body.copyWith(
-                                color: hidden
-                                    ? AppColors.textMuted
-                                    : AppColors.textPrimary,
-                              ),
+                    return Opacity(
+                      // 隐藏项置灰但仍留在列表里，方便拖拽排序与恢复
+                      key: ValueKey<String>(name),
+                      opacity: hidden ? 0.55 : 1,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                // 拖拽区覆盖手柄 + 名称（整行可拖），
+                                // 右侧显隐按钮留在监听器之外，避免点击被拖拽手势吃掉。
+                                Expanded(
+                                  child: ReorderableDragStartListener(
+                                    index: i,
+                                    child: MouseRegion(
+                                      cursor: SystemMouseCursors.grab,
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.drag_indicator_rounded,
+                                            size: 16,
+                                            color: hidden
+                                                ? AppColors.textMuted
+                                                : AppColors.textSecondary,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          SizedBox(
+                                            width: 20,
+                                            child: Text(
+                                              '${i + 1}',
+                                              style: AppText.caption.copyWith(
+                                                color: hidden
+                                                    ? AppColors.textMuted
+                                                    : null,
+                                                fontFeatures: const [
+                                                  FontFeature.tabularFigures()
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Expanded(
+                                            child: Text(
+                                              name,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: AppText.body.copyWith(
+                                                color: hidden
+                                                    ? AppColors.textMuted
+                                                    : AppColors.textPrimary,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                AppIconButton(
+                                  icon: Icon(
+                                    hidden
+                                        ? Icons.visibility_off_outlined
+                                        : Icons.visibility_outlined,
+                                    size: 14,
+                                  ),
+                                  size: 26,
+                                  tooltip: hidden
+                                      ? I18n.hidden_tabs.tr
+                                      : I18n.hide_tab.tr,
+                                  onPressed: () => hidden
+                                      ? controller.showTab(name)
+                                      : controller.hideTab(name),
+                                ),
+                              ],
                             ),
-                          ),
-                          Switch.adaptive(
-                            value: !hidden,
-                            onChanged: (v) =>
-                                v ? controller.showTab(name) : controller.hideTab(name),
-                          ),
-                        ],
+                            // 行间细分割线（最后一行不加）
+                            if (i < all.length - 1) const AppDivider(indent: 8),
+                          ],
+                        ),
                       ),
                     );
                   },
@@ -417,11 +383,19 @@ class ScriptTabChip extends StatefulWidget {
     required this.name,
     required this.selected,
     required this.onTap,
+    this.label,
+    this.showPower = true,
   });
 
   final String name;
+
+  /// 显示文案，默认与 [name] 相同（Home 用本地化文案）
+  final String? label;
   final bool selected;
   final VoidCallback onTap;
+
+  /// 是否显示电源开关（Home 不是脚本，没有启停语义）
+  final bool showPower;
 
   @override
   State<ScriptTabChip> createState() => _ScriptTabChipState();
@@ -459,7 +433,7 @@ class _ScriptTabChipState extends State<ScriptTabChip> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                widget.name,
+                widget.label ?? widget.name,
                 style: TextStyle(
                   fontSize: 11.5,
                   height: 1.1,
@@ -469,9 +443,11 @@ class _ScriptTabChipState extends State<ScriptTabChip> {
                       : AppColors.textSecondary,
                 ),
               ),
-              const SizedBox(width: 6),
-              // 电源开关：点它只切换运行状态，不触发标签切换
-              ScriptPowerButton(name: widget.name),
+              if (widget.showPower) ...[
+                const SizedBox(width: 6),
+                // 电源开关：点它只切换运行状态，不触发标签切换
+                ScriptPowerButton(name: widget.name),
+              ],
             ],
           ),
         ),

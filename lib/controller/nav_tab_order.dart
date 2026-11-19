@@ -60,6 +60,35 @@ List<String> reorderVisibleTabs({
   return [...visible, ...hiddenItems];
 }
 
+/// 在**完整顺序**上做拖拽重排（隐藏项也参与，不再统一排到末尾）。
+///
+/// 用于排序面板：面板列出全部标签，行索引与完整顺序一一对应，
+/// 因此不能走 [reorderVisibleTabs]（那边索引基于可见标签）。
+///
+/// [newIndex] 采用 `ReorderableListView` 的语义：表示「插入到该位置之前」，
+/// 向下拖动时目标位置需要减 1。索引越界时原样返回。
+List<String> reorderAllTabOrder({
+  required List<String> order,
+  required int oldIndex,
+  required int newIndex,
+}) {
+  if (order.isEmpty) return order;
+  if (oldIndex < 0 || oldIndex >= order.length) return order;
+  if (newIndex < 0 || newIndex > order.length) return order;
+
+  // ReorderableListView 的 newIndex 语义：向下拖动时先移除再插入，
+  // 目标下标要回退一位。
+  var target = newIndex;
+  if (target > oldIndex) target -= 1;
+  if (target == oldIndex) return order;
+  target = target.clamp(0, order.length - 1);
+
+  final result = order.toList();
+  final moved = result.removeAt(oldIndex);
+  result.insert(target, moved);
+  return result;
+}
+
 /// 可见标签内左右移动一格，返回完整顺序。移不动时原样返回。
 List<String> moveVisibleTab({
   required List<String> order,

@@ -51,7 +51,7 @@ class _LogWidgetState extends State<LogWidget> {
             scrollOffset: widget.controller.savedScrollOffsetVal.toInt());
       }
     });
-    widget.controller.scrollLogs = _scrollLogs;
+    widget.controller.registerScrollCallback(_scrollLogs);
   }
 
   @override
@@ -92,6 +92,7 @@ class _LogWidgetState extends State<LogWidget> {
     if (_scrollController != null && _scrollController!.hasClients) {
       widget.controller.saveScrollOffset(_scrollController!.offset);
     }
+    widget.controller.unregisterScrollCallback(_scrollLogs);
     _scrollController?.dispose();
     _scrollController = null;
     super.dispose();

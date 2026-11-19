@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_nb_net/flutter_net.dart';
 import 'package:get/get.dart';
 import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
@@ -8,6 +10,7 @@ import 'package:oasx/component/dio_http_cache/dio_http_cache.dart';
 import 'package:oasx/config/translation/i18n.dart';
 import 'package:oasx/config/translation/i18n_content.dart';
 import 'package:oasx/utils/check_version.dart';
+import 'package:oasx/utils/error_reporter.dart';
 import 'package:oasx/config/constants.dart';
 import 'package:oasx/controller/settings.dart';
 import './home_model.dart';
@@ -84,6 +87,8 @@ class ApiClient {
     } catch (e) {
       printError(info: '${I18n.network_error.tr}: $e');
       showNetErrSnackBar();
+      // 异常时按需弹系统通知（开关在工具页，默认关闭）
+      unawaited(ErrorReporter.report(e, source: 'network'));
       return ApiResult.failure(e.toString());
     }
   }

@@ -123,6 +123,124 @@ void main() {
     });
   });
 
+  group('reorderAllTabOrder', () {
+    test('向后拖拽：A 移到 C 之后', () {
+      // 完整 [A,B,C]；把 index0 拖到 index3（列表末尾）
+      final result = reorderAllTabOrder(
+        order: ['A', 'B', 'C'],
+        oldIndex: 0,
+        newIndex: 3,
+      );
+      expect(result, ['B', 'C', 'A']);
+    });
+
+    test('向前拖拽：C 移到 A 之前', () {
+      final result = reorderAllTabOrder(
+        order: ['A', 'B', 'C'],
+        oldIndex: 2,
+        newIndex: 0,
+      );
+      expect(result, ['C', 'A', 'B']);
+    });
+
+    test('中间项下移一格', () {
+      final result = reorderAllTabOrder(
+        order: ['A', 'B', 'C', 'D'],
+        oldIndex: 1,
+        newIndex: 3,
+      );
+      expect(result, ['A', 'C', 'B', 'D']);
+    });
+
+    test('中间项上移一格', () {
+      final result = reorderAllTabOrder(
+        order: ['A', 'B', 'C', 'D'],
+        oldIndex: 2,
+        newIndex: 1,
+      );
+      expect(result, ['A', 'C', 'B', 'D']);
+    });
+
+    test('隐藏项参与重排（不再被排到末尾）', () {
+      // 隐藏项 H 在 index1，把它拖到末尾
+      final result = reorderAllTabOrder(
+        order: ['A', 'H', 'B'],
+        oldIndex: 1,
+        newIndex: 3,
+      );
+      expect(result, ['A', 'B', 'H']);
+    });
+
+    test('可见项拖到隐藏项之前', () {
+      final result = reorderAllTabOrder(
+        order: ['A', 'B', 'H'],
+        oldIndex: 0,
+        newIndex: 2,
+      );
+      expect(result, ['B', 'A', 'H']);
+    });
+
+    test('同位置拖拽不改变顺序', () {
+      final result = reorderAllTabOrder(
+        order: ['A', 'B', 'C'],
+        oldIndex: 1,
+        newIndex: 1,
+      );
+      expect(result, ['A', 'B', 'C']);
+    });
+
+    test('拖到自身下一格不改变顺序（newIndex-1 后同位置）', () {
+      final result = reorderAllTabOrder(
+        order: ['A', 'B', 'C'],
+        oldIndex: 1,
+        newIndex: 2,
+      );
+      expect(result, ['A', 'B', 'C']);
+    });
+
+    test('越界 oldIndex 原样返回', () {
+      final order = ['A', 'B'];
+      expect(
+        reorderAllTabOrder(order: order, oldIndex: 5, newIndex: 0),
+        order,
+      );
+      expect(
+        reorderAllTabOrder(order: order, oldIndex: -1, newIndex: 1),
+        order,
+      );
+    });
+
+    test('越界 newIndex 原样返回', () {
+      final order = ['A', 'B'];
+      expect(
+        reorderAllTabOrder(order: order, oldIndex: 0, newIndex: 5),
+        order,
+      );
+      expect(
+        reorderAllTabOrder(order: order, oldIndex: 0, newIndex: -1),
+        order,
+      );
+    });
+
+    test('空列表原样返回', () {
+      expect(
+        reorderAllTabOrder(order: const [], oldIndex: 0, newIndex: 0),
+        isEmpty,
+      );
+    });
+
+    test('返回的是新列表，不修改入参', () {
+      final order = ['A', 'B', 'C'];
+      final result = reorderAllTabOrder(
+        order: order,
+        oldIndex: 0,
+        newIndex: 2,
+      );
+      expect(order, ['A', 'B', 'C']);
+      expect(identical(result, order), isFalse);
+    });
+  });
+
   group('moveVisibleTab', () {
     test('左移一格', () {
       expect(
